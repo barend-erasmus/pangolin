@@ -1,0 +1,25 @@
+{
+  "name": "pangolin",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "gulp build & tsc & browserify ./dist/main.js -o ./dist/bundle.js",
+    "lint": "tslint ./src/**/*.ts --fix --exclude ./src/**/*.d.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/barend-erasmus/pangolin.git"
+  },
+  "author": "Barend Erasmus",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/barend-erasmus/pangolin/issues"
+  },
+  "homepage": "https://github.com/barend-erasmus/pangolin#readme",
+  "devDependencies": {
+    "@types/node": "^9.6.1",
+    "gulp": "^3.9.1",
+    "gulp-clean": "^0.4.0",
+    "run-sequence": "^2.2.1"
+  }
+}
