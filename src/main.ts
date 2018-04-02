@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
 import { AlphaNumericCounter } from './alpha-numeric-counter';
+import { Client } from './client';
 import { DataStore } from './data-store';
 import { HashProcessEvent } from './events/hash-process';
 import { HashProcessCompletedEvent } from './events/hash-process-completed';
@@ -8,118 +9,99 @@ import { HashProcessStartedEvent } from './events/hash-process-started';
 import { HashProcess } from './models/hash-process';
 import { Message } from './models/message';
 
-let id: string = null;
+export class Main {
 
-let clientIds: string[] = [];
+    private client: Client = null;
 
-const ws = new WebSocket('ws://localhost:8891');
+    private dataStore: DataStore = null;
 
-const dataStore: DataStore = new DataStore();
+    constructor() {
+        this.client = new Client((message: Message) => this.onMessage(message), 'ws://localhost:8891');
 
-dataStore.addEvent(new HashProcessCreatedEvent('fC', 'D077F244DEF8A70E5EA758BD8352FCD8', dataStore.lamportTimestamp + 1, 'a'));
+        this.dataStore = new DataStore();
 
-ws.onopen = () => {
-    setTimeout(() => {
-        ws.send(JSON.stringify(new Message('123456', null, null, 'set-key')));
-
-        ws.send(JSON.stringify(new Message(null, null, null, 'list-clients')));
+        // TODO: Remove
+        this.dataStore.addEvent(new HashProcessCreatedEvent('fC', 'D077F244DEF8A70E5EA758BD8352FCD8', this.dataStore.lamportTimestamp + 1, 'a'));
 
         setInterval(() => {
-            execute(ws);
-        }, 5000);
-    }, 3000);
-};
-
-ws.onmessage = (event: MessageEvent) => {
-    const message: Message = JSON.parse(event.data);
-
-    if (message.type === 'list-clients') {
-        clientIds = JSON.parse(message.data);
-        id = message.to;
-    } else if (message.type === 'client-opened') {
-        ws.send(JSON.stringify(new Message(null, null, null, 'list-clients')));
-    } else if (message.type === 'client-closed') {
-        ws.send(JSON.stringify(new Message(null, null, null, 'list-clients')));
-    } else {
-        const hashProcessEvent: HashProcessEvent = JSON.parse(message.data);
-        dataStore.addEvent(hashProcessEvent);
+            this.onCycle();
+        }, 6000);
     }
-};
 
-ws.onclose = () => {
-
-};
-
-window.onbeforeunload = (event: BeforeUnloadEvent) => {
-    ws.close();
-};
-
-function execute(client: WebSocket) {
-    let hashProcess: HashProcess = dataStore.findExpiredHashProcess();
-
-    if (!hashProcess) {
-        hashProcess = dataStore.findUnprocessedHashProcess();
+    private onCycle(): void {
+        let hashProcess: HashProcess = this.dataStore.findExpiredHashProcess();
 
         if (!hashProcess) {
-            hashProcess = dataStore.nextHashProcess();
+            hashProcess = this.dataStore.findUnprocessedHashProcess();
 
             if (!hashProcess) {
-                return;
+                hashProcess = this.dataStore.nextHashProcess();
+
+                if (!hashProcess) {
+                    return;
+                }
+
+                const hashProcessCreatedEvent: HashProcessEvent = new HashProcessCreatedEvent(hashProcess.endValue, hashProcess.hash, this.dataStore.lamportTimestamp + 1, hashProcess.startValue);
+                this.dataStore.addEvent(hashProcessCreatedEvent);
+                this.client.sendHashProcessEventBroadcast(hashProcessCreatedEvent);
+            }
+        }
+
+        this.dataStore.lamportTimestamp++;
+
+        hashProcess.inProgress = true;
+        hashProcess.startTimestamp = this.dataStore.lamportTimestamp;
+
+        const hashProcessStartedEvent: HashProcessEvent = new HashProcessStartedEvent(hashProcess.endValue, hashProcess.hash, this.dataStore.lamportTimestamp, hashProcess.startValue);
+        this.dataStore.addEvent(hashProcessStartedEvent);
+        this.client.sendHashProcessEventBroadcast(hashProcessStartedEvent);
+
+        const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(hashProcess.startValue);
+
+        let found: boolean = false;
+
+        while (true) {
+            const str: string = alphaNumericCounter.value;
+
+            const hash: string = crypto.createHash('md5').update(str).digest('hex');
+
+            if (hash.toLowerCase() === hashProcess.hash.toLowerCase()) {
+                hashProcess.completed = true;
+                hashProcess.inProgress = false;
+                hashProcess.result = str;
+
+                const hashProcessCompletedEventWithResult: HashProcessEvent = new HashProcessCompletedEvent(hashProcess.endValue, hashProcess.hash, this.dataStore.lamportTimestamp + 1, hashProcess.result, hashProcess.startValue);
+                this.dataStore.addEvent(hashProcessCompletedEventWithResult);
+                this.client.sendHashProcessEventBroadcast(hashProcessCompletedEventWithResult);
+
+                found = true;
+
+                console.log(`FOUND: '${hash}' -> '${str}'`);
             }
 
-            const hashProcessCreatedEvent: HashProcessEvent = new HashProcessCreatedEvent(hashProcess.endValue, hashProcess.hash, dataStore.lamportTimestamp + 1, hashProcess.startValue);
-            dataStore.addEvent(hashProcessCreatedEvent);
-            client.send(JSON.stringify(new Message(JSON.stringify(hashProcessCreatedEvent), id, null, 'broadcast')));
+            if (str === hashProcess.endValue) {
+                break;
+            }
+
+            alphaNumericCounter.incrementBy(1);
         }
-    }
 
-    dataStore.lamportTimestamp++;
-
-    hashProcess.inProgress = true;
-    hashProcess.startTimestamp = dataStore.lamportTimestamp;
-
-    const hashProcessStartedEvent: HashProcessEvent = new HashProcessStartedEvent(hashProcess.endValue, hashProcess.hash, dataStore.lamportTimestamp, hashProcess.startValue);
-    dataStore.addEvent(hashProcessStartedEvent);
-    client.send(JSON.stringify(new Message(JSON.stringify(hashProcessStartedEvent), id, null, 'broadcast')));
-
-    const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(hashProcess.startValue);
-
-    let found: boolean = false;
-
-    while (true) {
-        const str: string = alphaNumericCounter.value;
-
-        const hash: string = crypto.createHash('md5').update(str).digest('hex');
-
-        if (hash.toLowerCase() === hashProcess.hash.toLowerCase()) {
+        if (!found) {
             hashProcess.completed = true;
             hashProcess.inProgress = false;
-            hashProcess.result = str;
+            hashProcess.result = null;
 
-            const hashProcessCompletedEventWithResult: HashProcessEvent = new HashProcessCompletedEvent(hashProcess.endValue, hashProcess.hash, dataStore.lamportTimestamp + 1, hashProcess.result, hashProcess.startValue);
-            dataStore.addEvent(hashProcessCompletedEventWithResult);
-            client.send(JSON.stringify(new Message(JSON.stringify(hashProcessCompletedEventWithResult), id, null, 'broadcast')));
-
-            found = true;
-
-            console.log(`FOUND: '${hash}' -> '${str}'`);
+            const hashProcessCompletedEventWithoutResult: HashProcessEvent = new HashProcessCompletedEvent(hashProcess.endValue, hashProcess.hash, this.dataStore.lamportTimestamp + 1, hashProcess.result, hashProcess.startValue);
+            this.dataStore.addEvent(hashProcessCompletedEventWithoutResult);
+            this.client.sendHashProcessEventBroadcast(hashProcessCompletedEventWithoutResult);
         }
-
-        if (str === hashProcess.endValue) {
-            break;
-        }
-
-        alphaNumericCounter.incrementBy(1);
     }
 
-    if (!found) {
-        hashProcess.completed = true;
-        hashProcess.inProgress = false;
-        hashProcess.result = null;
-
-        const hashProcessCompletedEventWithoutResult: HashProcessEvent = new HashProcessCompletedEvent(hashProcess.endValue, hashProcess.hash, dataStore.lamportTimestamp + 1, hashProcess.result, hashProcess.startValue);
-        dataStore.addEvent(hashProcessCompletedEventWithoutResult);
-        client.send(JSON.stringify(new Message(JSON.stringify(hashProcessCompletedEventWithoutResult), id, null, 'broadcast')));
+    private onMessage(message: Message): void {
+        const hashProcessEvent: HashProcessEvent = JSON.parse(message.data);
+        this.dataStore.addEvent(hashProcessEvent);
     }
 
 }
+
+const main: Main = new Main();
