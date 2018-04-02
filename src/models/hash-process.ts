@@ -1,4 +1,4 @@
-export class HashProcessResult {
+export class HashProcess {
 
     constructor(
         public completed: boolean,

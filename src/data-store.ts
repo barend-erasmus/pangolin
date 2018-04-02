@@ -1,10 +1,11 @@
 import { AlphaNumericCounter } from './alpha-numeric-counter';
-import { HashProcessResult } from './models/hash-process-result';
-import { LogEntry } from './models/log-entry';
+import { HashProcessEvent } from './events/hash-process';
+import { HashProcessCompletedEvent } from './events/hash-process-completed';
+import { HashProcess } from './models/hash-process';
 
 export class DataStore {
 
-    private hashProcessResults: HashProcessResult[] = [];
+    public hashProcessEvents: HashProcessEvent[] = [];
 
     public lamportTimestamp: number = 0;
 
@@ -12,56 +13,86 @@ export class DataStore {
 
     }
 
-    public addLogEntry(entry: LogEntry): void {
-        if (entry.lamportTimestamp > this.lamportTimestamp) {
-            this.lamportTimestamp = entry.lamportTimestamp;
+    public addEvent(event: HashProcessEvent): HashProcessEvent {
+        if (event.lamportTimestamp > this.lamportTimestamp) {
+            this.lamportTimestamp = event.lamportTimestamp;
 
-            const existingHashProcessResult: HashProcessResult = this.hashProcessResults.find((hashProcessResult: HashProcessResult) => hashProcessResult.endValue === entry.data.endValue && hashProcessResult.hash === entry.data.hash && hashProcessResult.startValue === entry.data.startValue);
+            this.hashProcessEvents.push(event);
 
-            if (existingHashProcessResult) {
-                existingHashProcessResult.completed = entry.data.completed;
-                existingHashProcessResult.inProgress = entry.data.inProgress;
-                existingHashProcessResult.result = entry.data.result;
-            } else {
-                this.hashProcessResults.push(entry.data);
-            }
+            return event;
         }
+
+        return null;
     }
 
-    public findExpiredHashProcessResult(): HashProcessResult {
-        const expiredHashProcessResults: HashProcessResult[] = this.getUnresolvedHashProcessResults().filter((hashProcessResult: HashProcessResult) => !hashProcessResult.completed && hashProcessResult.inProgress && hashProcessResult.startTimestamp + 100 < this.lamportTimestamp);
+    public compileHashProcessess(): HashProcess[] {
+        const hashProcesses: HashProcess[] = [];
 
-        return expiredHashProcessResults.length === 0 ? null : expiredHashProcessResults[0];
+        for (const event of this.hashProcessEvents) {
+            let hashProcess: HashProcess = hashProcesses.find((x) => x.endValue === event.endValue && x.hash === event.hash && x.startValue === event.startValue);
+
+            if (!hashProcess && event.type !== 'created') {
+                continue;
+            } else if (!hashProcess) {
+                hashProcess = new HashProcess(false, event.endValue, event.hash, false, null, null, event.startValue);
+                hashProcesses.push(hashProcess);
+            }
+
+            if (event.type === 'completed') {
+                hashProcess.completed = true;
+                hashProcess.inProgress = false;
+                hashProcess.result = (event as HashProcessCompletedEvent).result;
+            } else if (event.type === 'started') {
+                hashProcess.inProgress = true;
+                hashProcess.startTimestamp = event.lamportTimestamp;
+            }
+
+        }
+
+        return hashProcesses;
     }
 
-    public findUnprocessedHashProcessResult(): HashProcessResult {
-        const unprocessedHashProcessResults: HashProcessResult[] = this.getUnresolvedHashProcessResults().filter((hashProcessResult: HashProcessResult) => !hashProcessResult.completed && !hashProcessResult.inProgress);
+    public findExpiredHashProcess(): HashProcess {
+        const compileHashProcessess: HashProcess[] = this.compileHashProcessess();
 
-        return unprocessedHashProcessResults.length === 0 ? null : unprocessedHashProcessResults[0];
+        const expiredHashProcessess: HashProcess[] = compileHashProcessess.filter((hashProcess: HashProcess) => !hashProcess.completed && hashProcess.inProgress && hashProcess.startTimestamp + 100 < this.lamportTimestamp);
+
+        return expiredHashProcessess.length === 0 ? null : expiredHashProcessess[0];
     }
 
-    public nextHashProcessResult(): HashProcessResult {
-        const completedHashProcessResults: HashProcessResult[] = this.getUnresolvedHashProcessResults().filter((hashProcessResult: HashProcessResult) => hashProcessResult.completed);
+    public findUnprocessedHashProcess(): HashProcess {
+        const compiledHashProcessess: HashProcess[] = this.compileHashProcessess();
 
-        for (const hashProcessResult of completedHashProcessResults) {
-            const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(hashProcessResult.startValue);
+        const unprocessedHashProcessess: HashProcess[] = compiledHashProcessess.filter((hashProcess: HashProcess) => !hashProcess.completed && !hashProcess.inProgress);
+
+        return unprocessedHashProcessess.length === 0 ? null : unprocessedHashProcessess[0];
+    }
+
+    public nextHashProcess(): HashProcess {
+        const unresolvedHashProcesses: HashProcess[] = this.unresolvedHashProcesses();
+
+        const completedHashProcessess: HashProcess[] = unresolvedHashProcesses.filter((hashProcess: HashProcess) => hashProcess.completed);
+
+        for (const hashProcess of completedHashProcessess) {
+            const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(hashProcess.startValue);
 
             const startValue: string = alphaNumericCounter.incrementBy(401);
             const endValue: string = alphaNumericCounter.incrementBy(400);
 
-            const existingHashProcessResult: HashProcessResult = this.hashProcessResults.find((x) => x.endValue === endValue && x.hash === hashProcessResult.hash && x.startValue === startValue);
+            const existingHashProcess: HashProcess = unresolvedHashProcesses.find((x) => x.endValue === endValue && x.hash === hashProcess.hash && x.startValue === startValue);
 
-            if (existingHashProcessResult) {
-
-            } else {
-                return new HashProcessResult(false, endValue, hashProcessResult.hash, false, null, null, startValue);
+            if (!existingHashProcess) {
+                return new HashProcess(false, endValue, hashProcess.hash, false, null, null, startValue);
             }
         }
+
+        return null;
     }
 
-    private getUnresolvedHashProcessResults(): HashProcessResult[] {
-        const result: HashProcessResult[] = this.hashProcessResults.filter((hashProcessResult: HashProcessResult) => this.hashProcessResults.filter((x) => x.hash === hashProcessResult.hash && x.result).length === 0);
+    public unresolvedHashProcesses(): HashProcess[] {
+        const compiledHashProcessess: HashProcess[] = this.compileHashProcessess();
 
-        return result;
+        return compiledHashProcessess.filter((hashProcess: HashProcess) => compiledHashProcessess.filter((x) => x.hash === hashProcess.hash && x.result).length === 0);
     }
+
 }
