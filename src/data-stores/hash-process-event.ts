@@ -1,6 +1,7 @@
 import { AlphaNumericCounter } from '../alpha-numeric-counter';
 import { HashProcessEvent } from '../events/hash-process';
 import { HashProcessCompletedEvent } from '../events/hash-process-completed';
+import { ConsoleLogger } from '../logger/console';
 import { HashProcess } from '../models/hash-process';
 
 export class HashProcessEventDataStore {
@@ -9,12 +10,13 @@ export class HashProcessEventDataStore {
 
     protected hashProcessEvents: HashProcessEvent[] = [];
 
-    constructor() {
+    constructor(protected consoleLogger: ConsoleLogger) {
 
     }
 
     public appendHashProcessEvent(hashProcessEvent: HashProcessEvent): boolean {
         if (!this.validHashProcessEvent(hashProcessEvent)) {
+            this.consoleLogger.debug(`appendHashProcessEvent(hashProcessEvent) => false`, hashProcessEvent);
             return false;
         }
 
@@ -22,6 +24,7 @@ export class HashProcessEventDataStore {
 
         this.applyHashProcessEvent(hashProcessEvent);
 
+        this.consoleLogger.debug(`appendHashProcessEvent(hashProcessEvent) => true`, hashProcessEvent);
         return true;
     }
 

@@ -1,20 +1,22 @@
 import * as uuid from 'uuid';
+import { ConsoleLogger } from './logger/console';
 import { Message } from './models/message';
 
 export class RPCClient {
 
-    public clients: Array<{ id: string, metadata: any }> = [];
+    protected clients: Array<{ id: string, metadata: any }> = [];
 
-    public id: string = null;
+    protected id: string = null;
 
-    private pendingRequests: {} = {};
+    protected pendingRequests: {} = {};
 
-    private socket: WebSocket = null;
+    protected socket: WebSocket = null;
 
     constructor(
-        private onMessageFns: Array<(message: Message) => void>,
-        private onOpenFns: Array<() => void>,
-        private webSocketRelayServerHost: string,
+        protected consoleLogger: ConsoleLogger,
+        protected onMessageFns: Array<(message: Message) => void>,
+        protected onOpenFns: Array<() => void>,
+        protected webSocketRelayServerHost: string,
     ) {
         this.socket = new WebSocket(this.webSocketRelayServerHost);
 
@@ -33,17 +35,39 @@ export class RPCClient {
         this.socket.close();
     }
 
+    public findClientByMetadata(key: string, value: any): {id: string, metadata: any} {
+        return this.getClients().find((client) => client.metadata[key] === value);
+    }
+
+    public getClients(): Array<{ id: string, metadata: any }> {
+        return this.clients;
+    }
+
+    public getId(): string {
+        return this.id;
+    }
+
+    public getNumberOfClients(): number {
+        return this.getClients().length;
+    }
+
     public send(command: string, correlationId: string, data: any, id: string): Promise<Message> {
         return new Promise((resolve, reject) => {
             correlationId = correlationId ? correlationId : uuid.v4();
 
-            this.socket.send(JSON.stringify(new Message(command, correlationId, data, this.id, id)));
+            this.socket.send(JSON.stringify(new Message(command, correlationId, data, this.getId(), id)));
 
-            this.pendingRequests[correlationId] = resolve;
+            this.pendingRequests[correlationId] = { resolve, reject };
+
+            setTimeout(() => {
+                this.pendingRequests[correlationId] = undefined;
+
+                this.consoleLogger.debug(`send('${command}', '${correlationId}', data, '${id}') -> timeout`);
+            }, 2000);
         });
     }
 
-    private initializeListeners(): void {
+    protected initializeListeners(): void {
         this.socket.onclose = () => {
 
         };
@@ -59,7 +83,7 @@ export class RPCClient {
         };
     }
 
-    private onMessage(event: MessageEvent): void {
+    protected onMessage(event: MessageEvent): void {
         const message: Message = JSON.parse(event.data);
 
         if (message.command === 'client-opened' && message.from === 'server') {
@@ -72,19 +96,23 @@ export class RPCClient {
                 this.clients.splice(index, 1);
             }
         } else {
-            const resolve: any = this.pendingRequests[message.correlationId];
+            const promiseFn: any = this.pendingRequests[message.correlationId];
 
-            if (!resolve) {
+            if (!promiseFn) {
                 for (const onMessageFn of this.onMessageFns) {
                     onMessageFn(message);
                 }
+            } else if (message.command === 'error') {
+                promiseFn.reject(message);
+                this.pendingRequests[message.correlationId] = undefined;
             } else {
-                resolve(message);
+                promiseFn.resolve(message);
+                this.pendingRequests[message.correlationId] = undefined;
             }
         }
     }
 
-    private onOpen(): void {
+    protected onOpen(): void {
         this.send('set-key', null, '123456', 'server').then(() => {
 
         });

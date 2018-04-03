@@ -1,4 +1,5 @@
 import { RaftClientTickAction } from './enums/raft-client-tick-action';
+import { ConsoleLogger } from './logger/console';
 
 export class RaftClient {
 
@@ -6,7 +7,7 @@ export class RaftClient {
 
     protected electionTimeoutInMilliseconds: number = null;
 
-    public leader: string = null;
+    protected leader: string = null;
 
     protected numberOfNodes: number = null;
 
@@ -17,19 +18,32 @@ export class RaftClient {
     protected term: number = 0;
 
     constructor(
-        public id: string,
+        protected consoleLogger: ConsoleLogger,
+        protected id: string,
     ) {
         this.setElectionExpiry();
     }
 
     public heartbeat(id: string, term: number): void {
+        this.consoleLogger.debug(`heartbeat('${id}', ${term})`);
+
+        this.consoleLogger.debug(`heartbeat('${id}', ${term}) -> (term > this.term) => ${term > this.term}`);
         if (term > this.term) {
             this.setAsFollower(id, term);
         }
 
+        this.consoleLogger.debug(`heartbeat('${id}', ${term}) -> (term >= this.term) => ${term >= this.term}`);
         if (term >= this.term) {
             this.setElectionExpiry();
         }
+    }
+
+    public getId(): string {
+        return this.id;
+    }
+
+    public getLeader(): string {
+        return this.isLeader() ? this.id : this.leader;
     }
 
     public isLeader(): boolean  {
@@ -37,26 +51,30 @@ export class RaftClient {
     }
 
     public vote(id: string, term: number): boolean {
+        this.consoleLogger.debug(`vote('${id}', ${term}) -> (term > this.term) => ${term > this.term}`);
         if (term > this.term) {
             this.setLeader(id);
             this.term = term;
 
             this.setElectionExpiry();
 
+            this.consoleLogger.debug(`vote('${id}', ${term}) => true`);
             return true;
         }
 
+        this.consoleLogger.debug(`vote('${id}', ${term}) => false`);
         return false;
     }
 
     public receiveVote(term: number): void {
+        this.consoleLogger.debug(`receiveVote(${term}) -> (term === this.term) => ${term === this.term}`);
         if (term === this.term) {
             this.numberOfVotes++;
         }
     }
 
     public setNumberOfNodes(numberOfNodes: number): void {
-        this.numberOfNodes = this.numberOfVotes;
+        this.numberOfNodes = numberOfNodes;
     }
 
     public tick(): RaftClientTickAction {
@@ -86,7 +104,7 @@ export class RaftClient {
         this.state = 'candidate';
         this.term++;
 
-        console.log(`'${this.id}' changed to '${this.state}'`);
+        this.consoleLogger.info(`'${this.id}' changed to '${this.state}'`);
     }
 
     protected setAsFollower(leader: string, term: number): void {
@@ -95,14 +113,14 @@ export class RaftClient {
         this.state = 'follower';
         this.term = term ? term : this.term;
 
-        console.log(`'${this.id}' changed to '${this.state}'`);
+        this.consoleLogger.info(`'${this.id}' changed to '${this.state}'`);
     }
 
     protected setAsLeader(): void {
         this.numberOfVotes = null;
         this.state = 'leader';
 
-        console.log(`'${this.id}' changed to '${this.state}'`);
+        this.consoleLogger.info(`'${this.id}' changed to '${this.state}'`);
     }
 
     protected setElectionExpiry(): void {
@@ -113,7 +131,7 @@ export class RaftClient {
     protected setLeader(id: string): void {
         this.leader = id;
 
-        console.log(`leader set to '${this.leader}'`);
+        this.consoleLogger.info(`leader set to '${this.leader}'`);
     }
 
 }

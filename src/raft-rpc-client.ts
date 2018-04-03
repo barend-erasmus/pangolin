@@ -1,5 +1,6 @@
 import * as uuid from 'uuid';
 import { RaftClientTickAction } from './enums/raft-client-tick-action';
+import { ConsoleLogger } from './logger/console';
 import { Message } from './models/message';
 import { RaftClient } from './raft-client';
 import { RPCClient } from './rpc-client';
@@ -7,9 +8,10 @@ import { RPCClient } from './rpc-client';
 export class RaftRPCClient extends RaftClient {
 
     constructor(
-        private rpcClient: RPCClient,
+        protected consoleLogger: ConsoleLogger,
+        protected rpcClient: RPCClient,
     ) {
-        super(uuid.v4());
+        super(consoleLogger, uuid.v4());
 
         this.rpcClient.addOnMessageFn((message: Message) => this.onMessage(message));
 
@@ -20,13 +22,13 @@ export class RaftRPCClient extends RaftClient {
         }, 1000);
     }
 
-    private handleHeartbeat(message: Message): void {
+    protected handleHeartbeat(message: Message): void {
         this.heartbeat(message.data.id, message.data.term);
 
         this.rpcClient.send(message.command, message.correlationId, `OK`, message.from);
     }
 
-    private handleRequestVote(message: Message): void {
+    protected handleRequestVote(message: Message): void {
         if (this.vote(message.data.id, message.data.term)) {
             this.rpcClient.send(message.command, message.correlationId, message.data, message.from);
         } else {
@@ -34,18 +36,20 @@ export class RaftRPCClient extends RaftClient {
         }
     }
 
-    private onCycle(): void {
-        if (this.rpcClient.clients.length < 3) {
+    protected onCycle(): void {
+        if (this.rpcClient.getNumberOfClients() < 3) {
             return;
         }
+
+        this.setNumberOfNodes(this.rpcClient.getNumberOfClients());
 
         const raftClientTickAction: RaftClientTickAction = this.tick();
 
         if (raftClientTickAction === RaftClientTickAction.NONE) {
 
         } else if (raftClientTickAction === RaftClientTickAction.REQUEST_VOTES) {
-            for (const client of this.rpcClient.clients) {
-                if (client.id === this.rpcClient.id) {
+            for (const client of this.rpcClient.getClients()) {
+                if (client.id === this.rpcClient.getId()) {
                     continue;
                 }
 
@@ -56,8 +60,8 @@ export class RaftRPCClient extends RaftClient {
                 });
             }
         } else if (raftClientTickAction === RaftClientTickAction.SEND_HEARTBEAT) {
-            for (const client of this.rpcClient.clients) {
-                if (client.id === this.rpcClient.id) {
+            for (const client of this.rpcClient.getClients()) {
+                if (client.id === this.rpcClient.getId()) {
                     continue;
                 }
 
@@ -66,7 +70,7 @@ export class RaftRPCClient extends RaftClient {
         }
     }
 
-    private onMessage(message: Message): void {
+    protected onMessage(message: Message): void {
         switch (message.command) {
             case 'raft-client-heartbeat':
                 this.handleHeartbeat(message);

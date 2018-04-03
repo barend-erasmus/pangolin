@@ -2,6 +2,7 @@ import * as uuid from 'uuid';
 import { HashProcessEventDataStore } from './data-stores/hash-process-event';
 import { HashProcessEvent } from './events/hash-process';
 import { HashProcessCreatedEvent } from './events/hash-process-created';
+import { ConsoleLogger } from './logger/console';
 import { HashProcess } from './models/hash-process';
 import { Message } from './models/message';
 import { RaftRPCClient } from './raft-rpc-client';
@@ -9,12 +10,15 @@ import { RPCClient } from './rpc-client';
 
 export class HashProcessClient {
 
-    protected hashProcessEventDataStore: HashProcessEventDataStore = new HashProcessEventDataStore();
+    protected hashProcessEventDataStore: HashProcessEventDataStore = null;
 
     constructor(
-        private raftRPCClient: RaftRPCClient,
-        private rpcClient: RPCClient,
+        protected consoleLogger: ConsoleLogger,
+        protected raftRPCClient: RaftRPCClient,
+        protected rpcClient: RPCClient,
     ) {
+        this.hashProcessEventDataStore = new HashProcessEventDataStore(this.consoleLogger);
+
         this.rpcClient.addOnMessageFn((message: Message) => this.onMessage(message));
 
         this.rpcClient.addOnOpenFn(() => this.onOpen());
@@ -41,7 +45,7 @@ export class HashProcessClient {
                 const result: boolean = this.hashProcessEventDataStore.appendHashProcessEvent(hashProcessCreatedEvent);
 
                 if (result) {
-                    for (const client of this.rpcClient.clients) {
+                    for (const client of this.rpcClient.getClients()) {
                         this.sendAppendHashProcessEvents(client, hashProcessCreatedEvent);
                     }
                 }
@@ -50,7 +54,7 @@ export class HashProcessClient {
     }
 
     protected getRPCClientIdFromRaftClientId(raftClientId: string): string {
-        const rpcClient: { id: string, metadata: any } = this.rpcClient.clients.find((client) => client.metadata['raft-client-id'] === raftClientId);
+        const rpcClient: { id: string, metadata: any } = this.rpcClient.findClientByMetadata('raft-client-id', raftClientId);
 
         return rpcClient ? rpcClient.id : null;
     }
@@ -58,19 +62,20 @@ export class HashProcessClient {
     protected handleAppendHashProcessEvents(message: Message): void {
         const lastHashProcessEventIndex: number = this.hashProcessEventDataStore.getLastHashProcessEventIndex();
 
-        if (this.raftRPCClient.isLeader() || (!this.raftRPCClient.isLeader() && this.isMessageFromLeader(message))) {
-            for (const item of message.data) {
-                const result: boolean = this.hashProcessEventDataStore.appendHashProcessEvent(item);
-            }
-
-            this.rpcClient.send(message.command, message.correlationId, { lastHashProcessEventIndex, message: null }, message.from);
-        } else {
-            this.rpcClient.send(message.command, message.correlationId, { lastHashProcessEventIndex, message: `leader: ${this.raftRPCClient.leader}` }, message.from);
+        if (!this.raftRPCClient.isLeader() && !this.isMessageFromLeader(message)) {
+            this.rpcClient.send('error', message.correlationId, { leader: this.raftRPCClient.getLeader(), message: `Follower can only receive messages from the leader` }, message.from);
+            return;
         }
+
+        for (const item of message.data) {
+            const result: boolean = this.hashProcessEventDataStore.appendHashProcessEvent(item);
+        }
+
+        this.rpcClient.send(message.command, message.correlationId, { lastHashProcessEventIndex }, message.from);
     }
 
     protected isMessageFromLeader(message: Message): boolean {
-        const leaderRPCClientId: string = this.getRPCClientIdFromRaftClientId(this.raftRPCClient.leader);
+        const leaderRPCClientId: string = this.getRPCClientIdFromRaftClientId(this.raftRPCClient.getLeader());
 
         if (leaderRPCClientId !== message.from) {
             return false;
@@ -98,7 +103,7 @@ export class HashProcessClient {
     }
 
     protected onOpen(): void {
-        this.rpcClient.send('set-metadata', null, { key: 'raft-client-id', value: this.raftRPCClient.id }, 'server');
+        this.rpcClient.send('set-metadata', null, { key: 'raft-client-id', value: this.raftRPCClient.getId() }, 'server');
     }
 
     protected sendAppendHashProcessEvents(client: { id: string, metadata: any }, hashProcessEvent: HashProcessEvent): void {
