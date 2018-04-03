@@ -3,7 +3,7 @@ import { Message } from './models/message';
 
 export class RPCClient {
 
-    public clientIds: string[] = [];
+    public clients: Array<{ id: string, metadata: any }> = [];
 
     public id: string = null;
 
@@ -12,12 +12,21 @@ export class RPCClient {
     private socket: WebSocket = null;
 
     constructor(
-        private onMessageFn: (message: Message) => void,
+        private onMessageFns: Array<(message: Message) => void>,
+        private onOpenFns: Array<() => void>,
         private webSocketRelayServerHost: string,
     ) {
         this.socket = new WebSocket(this.webSocketRelayServerHost);
 
         this.initializeListeners();
+    }
+
+    public addOnMessageFn(fn: (message: Message) => void): void {
+        this.onMessageFns.push(fn);
+    }
+
+    public addOnOpenFn(fn: () => void): void {
+        this.onOpenFns.push(fn);
     }
 
     public close(): void {
@@ -54,18 +63,21 @@ export class RPCClient {
         const message: Message = JSON.parse(event.data);
 
         if (message.command === 'client-opened' && message.from === 'server') {
-            this.clientIds.push(message.data);
+            this.clients.push(message.data);
         } else if (message.command === 'client-closed' && message.from === 'server') {
-            const index: number = this.clientIds.indexOf(message.data);
+            const client = this.clients.find((x) => x.id === message.data.id);
+            const index: number = this.clients.indexOf(client);
 
             if (index > -1) {
-                this.clientIds.splice(index, 1);
+                this.clients.splice(index, 1);
             }
         } else {
             const resolve: any = this.pendingRequests[message.correlationId];
 
             if (!resolve) {
-                this.onMessageFn(message);
+                for (const onMessageFn of this.onMessageFns) {
+                    onMessageFn(message);
+                }
             } else {
                 resolve(message);
             }
@@ -78,9 +90,13 @@ export class RPCClient {
         });
 
         this.send('list-clients', null, '123456', 'server').then((message: Message) => {
-            this.clientIds = message.data;
+            this.clients = message.data;
             this.id = message.to;
         });
+
+        for (const onOpenFn of this.onOpenFns) {
+            onOpenFn();
+        }
     }
 
 }

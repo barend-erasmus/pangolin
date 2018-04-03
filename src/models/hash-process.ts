@@ -6,6 +6,7 @@ export class HashProcess {
         public hash: string,
         public inProgress: boolean,
         public result: string,
+        public startIndex: number,
         public startValue: string,
     ) {
 

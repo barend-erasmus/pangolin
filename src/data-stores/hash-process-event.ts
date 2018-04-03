@@ -1,12 +1,13 @@
+import { AlphaNumericCounter } from '../alpha-numeric-counter';
 import { HashProcessEvent } from '../events/hash-process';
 import { HashProcessCompletedEvent } from '../events/hash-process-completed';
 import { HashProcess } from '../models/hash-process';
 
 export class HashProcessEventDataStore {
 
-    private hashProcessess: HashProcess[] = [];
+    public hashProcessess: HashProcess[] = [];
 
-    private hashProcessEvents: HashProcessEvent[] = [];
+    public hashProcessEvents: HashProcessEvent[] = [];
 
     constructor() {
 
@@ -23,32 +24,9 @@ export class HashProcessEventDataStore {
 
         this.applyHashProcessEvent(hashProcessEvent);
 
+        console.log(`new hash process event appened`);
+
         return true;
-    }
-
-    public compileHashProcessess(hashProcessEvents: HashProcessEvent[]): HashProcess[] {
-        const hashProcesses: HashProcess[] = [];
-
-        for (const hashProcessEvent of hashProcessEvents) {
-            let hashProcess: HashProcess = hashProcesses.find((x) => x.endValue === hashProcessEvent.endValue && x.hash === hashProcessEvent.hash && x.startValue === hashProcessEvent.startValue);
-
-            if (!hashProcess && hashProcessEvent.type !== 'created') {
-                continue;
-            } else if (!hashProcess) {
-                hashProcess = new HashProcess(false, hashProcessEvent.endValue, hashProcessEvent.hash, false, null, hashProcessEvent.startValue);
-                hashProcesses.push(hashProcess);
-            }
-
-            if (hashProcessEvent.type === 'completed') {
-                hashProcess.completed = true;
-                hashProcess.inProgress = false;
-                hashProcess.result = (hashProcessEvent as HashProcessCompletedEvent).result;
-            } else if (hashProcessEvent.type === 'started') {
-                hashProcess.inProgress = true;
-            }
-        }
-
-        return hashProcesses;
     }
 
     public getLastHashProcessEventIndex(): number {
@@ -58,17 +36,15 @@ export class HashProcessEventDataStore {
     }
 
     public findExpiredHashProcess(): HashProcess {
-        const compileHashProcessess: HashProcess[] = this.compileHashProcessess();
+        const lastHashProcessEventIndex: number = this.getLastHashProcessEventIndex();
 
-        const expiredHashProcessess: HashProcess[] = compileHashProcessess.filter((hashProcess: HashProcess) => !hashProcess.completed && hashProcess.inProgress && hashProcess.startTimestamp + 10000 < this.lamportTimestamp);
+        const expiredHashProcessess: HashProcess[] = this.hashProcessess.filter((hashProcess: HashProcess) => !hashProcess.completed && hashProcess.inProgress && hashProcess.startIndex + 10000 < lastHashProcessEventIndex);
 
         return expiredHashProcessess.length === 0 ? null : expiredHashProcessess[0];
     }
 
     public findUnprocessedHashProcess(): HashProcess {
-        const compiledHashProcessess: HashProcess[] = this.compileHashProcessess();
-
-        const unprocessedHashProcessess: HashProcess[] = compiledHashProcessess.filter((hashProcess: HashProcess) => !hashProcess.completed && !hashProcess.inProgress);
+        const unprocessedHashProcessess: HashProcess[] = this.hashProcessess.filter((hashProcess: HashProcess) => !hashProcess.completed && !hashProcess.inProgress);
 
         return unprocessedHashProcessess.length === 0 ? null : unprocessedHashProcessess[0];
     }
@@ -87,7 +63,7 @@ export class HashProcessEventDataStore {
             const existingHashProcess: HashProcess = unresolvedHashProcesses.find((x) => x.endValue === endValue && x.hash === hashProcess.hash && x.startValue === startValue);
 
             if (!existingHashProcess) {
-                return new HashProcess(false, null, this.lamportTimestamp, endValue, hashProcess.hash, false, null, null, startValue);
+                return new HashProcess(false, endValue, hashProcess.hash, false, null, -1, startValue);
             }
         }
 
@@ -95,16 +71,14 @@ export class HashProcessEventDataStore {
     }
 
     public unresolvedHashProcesses(): HashProcess[] {
-        const compiledHashProcessess: HashProcess[] = this.compileHashProcessess();
-
-        return compiledHashProcessess.filter((hashProcess: HashProcess) => compiledHashProcessess.filter((x) => x.hash === hashProcess.hash && x.result).length === 0);
+        return this.hashProcessess.filter((hashProcess: HashProcess) => this.hashProcessess.filter((x) => x.hash === hashProcess.hash && x.result).length === 0);
     }
 
     private applyHashProcessEvent(hashProcessEvent: HashProcessEvent): void {
         let hashProcess: HashProcess = null;
 
         if (hashProcessEvent.type === 'created') {
-            hashProcess = new HashProcess(false, hashProcessEvent.endValue, hashProcessEvent.hash, false, null, hashProcessEvent.startValue);
+            hashProcess = new HashProcess(false, hashProcessEvent.endValue, hashProcessEvent.hash, false, null, -1, hashProcessEvent.startValue);
             this.hashProcessess.push(hashProcess);
 
             return;
@@ -119,6 +93,7 @@ export class HashProcessEventDataStore {
                 hashProcess.result = (hashProcessEvent as HashProcessCompletedEvent).result;
             } else if (event.type === 'started') {
                 hashProcess.inProgress = true;
+                hashProcess.startIndex = hashProcessEvent.index;
             }
         }
     }

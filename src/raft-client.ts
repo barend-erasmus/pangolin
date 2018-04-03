@@ -2,19 +2,19 @@ import { RaftClientTickAction } from './enums/raft-client-tick-action';
 
 export class RaftClient {
 
-    public electionExpiry: number = null;
+    protected electionExpiry: number = null;
 
-    public electionTimeoutInMilliseconds: number = null;
+    protected electionTimeoutInMilliseconds: number = null;
 
     public leader: string = null;
 
-    public numberOfNodes: number = null;
+    protected numberOfNodes: number = null;
 
-    public numberOfVotes: number = null;
+    protected numberOfVotes: number = null;
 
-    public state: string = 'follower';
+    protected state: string = 'follower';
 
-    public term: number = 0;
+    protected term: number = 0;
 
     constructor(
         public id: string,
@@ -30,6 +30,10 @@ export class RaftClient {
         if (term >= this.term) {
             this.setElectionExpiry();
         }
+    }
+
+    public isLeader(): boolean  {
+        return this.state === 'leader';
     }
 
     public vote(id: string, term: number): boolean {
@@ -77,7 +81,7 @@ export class RaftClient {
         return RaftClientTickAction.NONE;
     }
 
-    private setAsCandidate(): void {
+    protected setAsCandidate(): void {
         this.numberOfVotes = 1;
         this.state = 'candidate';
         this.term++;
@@ -85,8 +89,8 @@ export class RaftClient {
         console.log(`'${this.id}' changed to '${this.state}'`);
     }
 
-    private setAsFollower(leader: string, term: number): void {
-        this.leader = leader ? leader : this.leader;
+    protected setAsFollower(leader: string, term: number): void {
+        this.setLeader(leader ? leader : this.leader);
         this.numberOfVotes = null;
         this.state = 'follower';
         this.term = term ? term : this.term;
@@ -94,19 +98,19 @@ export class RaftClient {
         console.log(`'${this.id}' changed to '${this.state}'`);
     }
 
-    private setAsLeader(): void {
+    protected setAsLeader(): void {
         this.numberOfVotes = null;
         this.state = 'leader';
 
         console.log(`'${this.id}' changed to '${this.state}'`);
     }
 
-    private setElectionExpiry(): void {
+    protected setElectionExpiry(): void {
         this.electionTimeoutInMilliseconds = (Math.random() * 10000) + 5000;
         this.electionExpiry = new Date().getTime() + this.electionTimeoutInMilliseconds;
     }
 
-    private setLeader(id: string): void {
+    protected setLeader(id: string): void {
         this.leader = id;
 
         console.log(`leader set to '${this.leader}'`);
