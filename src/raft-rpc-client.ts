@@ -4,7 +4,7 @@ import { Message } from './models/message';
 import { RaftClient } from './raft-client';
 import { RPCClient } from './rpc-client';
 
-export class RaftRCPClient extends RaftClient {
+export class RaftRPCClient extends RaftClient {
 
     constructor(
         private rpcClient: RPCClient,

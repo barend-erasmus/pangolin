@@ -5,18 +5,16 @@ import { HashProcess } from '../models/hash-process';
 
 export class HashProcessEventDataStore {
 
-    public hashProcessess: HashProcess[] = [];
+    protected hashProcessess: HashProcess[] = [];
 
-    public hashProcessEvents: HashProcessEvent[] = [];
+    protected hashProcessEvents: HashProcessEvent[] = [];
 
     constructor() {
 
     }
 
     public appendHashProcessEvent(hashProcessEvent: HashProcessEvent): boolean {
-        const lastHashProcessEventIndex: number = this.hashProcessEvents.length === 0 ? -1 : this.hashProcessEvents[this.hashProcessEvents.length - 1].index;
-
-        if (lastHashProcessEventIndex + 1 !== hashProcessEvent.index) {
+        if (!this.validHashProcessEvent(hashProcessEvent)) {
             return false;
         }
 
@@ -24,9 +22,11 @@ export class HashProcessEventDataStore {
 
         this.applyHashProcessEvent(hashProcessEvent);
 
-        console.log(`new hash process event appened`);
-
         return true;
+    }
+
+    public getLastHashProcessEventsFromIndex(index: number): HashProcessEvent[] {
+        return this.hashProcessEvents.filter((x) => x.index > index);
     }
 
     public getLastHashProcessEventIndex(): number {
@@ -96,5 +96,15 @@ export class HashProcessEventDataStore {
                 hashProcess.startIndex = hashProcessEvent.index;
             }
         }
+    }
+
+    private validHashProcessEvent(hashProcessEvent: HashProcessEvent): boolean {
+        const lastHashProcessEventIndex: number = this.hashProcessEvents.length === 0 ? -1 : this.hashProcessEvents[this.hashProcessEvents.length - 1].index;
+
+        if (lastHashProcessEventIndex + 1 !== hashProcessEvent.index) {
+            return false;
+        }
+
+        return true;
     }
 }
