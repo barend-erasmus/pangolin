@@ -1,107 +1,58 @@
-import * as crypto from 'crypto';
-import { AlphaNumericCounter } from './alpha-numeric-counter';
-import { Client } from './client';
-import { DataStore } from './data-store';
-import { HashProcessEvent } from './events/hash-process';
-import { HashProcessCompletedEvent } from './events/hash-process-completed';
-import { HashProcessCreatedEvent } from './events/hash-process-created';
-import { HashProcessStartedEvent } from './events/hash-process-started';
-import { HashProcess } from './models/hash-process';
+import * as uuid from 'uuid';
+import { RaftClientTickAction } from './enums/raft-client-tick-action';
 import { Message } from './models/message';
+import { RaftClient } from './raft-client';
+import { RPCClient } from './rpc-client';
 
-export class Main {
+const raftClient: RaftClient = new RaftClient(uuid.v4());
 
-    private client: Client = null;
+let rpcClient: RPCClient = null;
 
-    private dataStore: DataStore = null;
+rpcClient = new RPCClient((message: Message) => {
+    if (message.command === 'raft-client-request-vote') {
+        rpcClient.send(message.command, message.correlationId, `OK`, message.from);
 
-    constructor() {
-        this.client = new Client((message: Message) => this.onMessage(message), 'ws://localhost:8891');
+        if (raftClient.vote(message.data.id, message.data.term)) {
+            rpcClient.send('raft-client-vote', null, message.data, message.from);
+        }
+    } else if (message.command === 'raft-client-vote') {
+        raftClient.receiveVote(message.data.term);
 
-        this.dataStore = new DataStore();
+        rpcClient.send(message.command, message.correlationId, `OK`, message.from);
+    } else if (message.command === 'raft-client-heartbeat') {
+        raftClient.heartbeat(message.data.id, message.data.term);
 
-        // TODO: Remove
-        this.dataStore.addEvent(new HashProcessCreatedEvent('fC', 'D077F244DEF8A70E5EA758BD8352FCD8', this.dataStore.lamportTimestamp + 1, 'a'));
+        rpcClient.send(message.command, message.correlationId, `OK`, message.from);
+    }
+}, 'ws://localhost:8891');
 
-        setInterval(() => {
-            this.onCycle();
-        }, 6000);
+setInterval(() => {
+
+    if (rpcClient.clientIds.length < 3) {
+        return;
     }
 
-    private onCycle(): void {
-        let hashProcess: HashProcess = this.dataStore.findExpiredHashProcess();
+    const raftClientTickAction: RaftClientTickAction = raftClient.tick();
 
-        if (!hashProcess) {
-            hashProcess = this.dataStore.findUnprocessedHashProcess();
+    if (raftClientTickAction === RaftClientTickAction.NONE) {
 
-            if (!hashProcess) {
-                hashProcess = this.dataStore.nextHashProcess();
+    } else if (raftClientTickAction === RaftClientTickAction.REQUEST_VOTES) {
+        const requests: Array<Promise<any>> = [];
 
-                if (!hashProcess) {
-                    return;
-                }
-
-                const hashProcessCreatedEvent: HashProcessEvent = new HashProcessCreatedEvent(hashProcess.endValue, hashProcess.hash, this.dataStore.lamportTimestamp + 1, hashProcess.startValue);
-                this.dataStore.addEvent(hashProcessCreatedEvent);
-                this.client.sendHashProcessEventBroadcast(hashProcessCreatedEvent);
+        for (const clientId of rpcClient.clientIds) {
+            if (clientId === rpcClient.id) {
+                continue;
             }
+
+            rpcClient.send('raft-client-request-vote', null, { id: raftClient.id, term: raftClient.term }, clientId);
         }
-
-        this.dataStore.lamportTimestamp++;
-
-        hashProcess.inProgress = true;
-        hashProcess.startTimestamp = this.dataStore.lamportTimestamp;
-
-        const hashProcessStartedEvent: HashProcessEvent = new HashProcessStartedEvent(hashProcess.endValue, hashProcess.hash, this.dataStore.lamportTimestamp, hashProcess.startValue);
-        this.dataStore.addEvent(hashProcessStartedEvent);
-        this.client.sendHashProcessEventBroadcast(hashProcessStartedEvent);
-
-        const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(hashProcess.startValue);
-
-        let found: boolean = false;
-
-        while (true) {
-            const str: string = alphaNumericCounter.value;
-
-            const hash: string = crypto.createHash('md5').update(str).digest('hex');
-
-            if (hash.toLowerCase() === hashProcess.hash.toLowerCase()) {
-                hashProcess.completed = true;
-                hashProcess.inProgress = false;
-                hashProcess.result = str;
-
-                const hashProcessCompletedEventWithResult: HashProcessEvent = new HashProcessCompletedEvent(hashProcess.endValue, hashProcess.hash, this.dataStore.lamportTimestamp + 1, hashProcess.result, hashProcess.startValue);
-                this.dataStore.addEvent(hashProcessCompletedEventWithResult);
-                this.client.sendHashProcessEventBroadcast(hashProcessCompletedEventWithResult);
-
-                found = true;
-
-                console.log(`FOUND: '${hash}' -> '${str}'`);
+    } else if (raftClientTickAction === RaftClientTickAction.SEND_HEARTBEAT) {
+        for (const clientId of rpcClient.clientIds) {
+            if (clientId === rpcClient.id) {
+                continue;
             }
 
-            if (str === hashProcess.endValue) {
-                break;
-            }
-
-            alphaNumericCounter.incrementBy(1);
-        }
-
-        if (!found) {
-            hashProcess.completed = true;
-            hashProcess.inProgress = false;
-            hashProcess.result = null;
-
-            const hashProcessCompletedEventWithoutResult: HashProcessEvent = new HashProcessCompletedEvent(hashProcess.endValue, hashProcess.hash, this.dataStore.lamportTimestamp + 1, hashProcess.result, hashProcess.startValue);
-            this.dataStore.addEvent(hashProcessCompletedEventWithoutResult);
-            this.client.sendHashProcessEventBroadcast(hashProcessCompletedEventWithoutResult);
+            rpcClient.send('raft-client-heartbeat', null, { id: raftClient.id, term: raftClient.term }, clientId);
         }
     }
-
-    private onMessage(message: Message): void {
-        const hashProcessEvent: HashProcessEvent = JSON.parse(message.data);
-        this.dataStore.addEvent(hashProcessEvent);
-    }
-
-}
-
-const main: Main = new Main();
+}, 1000);

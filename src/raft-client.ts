@@ -1,6 +1,6 @@
-import { RaftNodeAction } from './enums/raft-node-action';
+import { RaftClientTickAction } from './enums/raft-client-tick-action';
 
-export class RaftNode {
+export class RaftClient {
 
     public electionExpiry: number = null;
 
@@ -16,25 +16,25 @@ export class RaftNode {
 
     public term: number = 0;
 
-    constructor(public id: string) {
+    constructor(
+        public id: string,
+    ) {
         this.setElectionExpiry();
     }
 
-    public incrementVote(): void {
-        this.numberOfVotes++;
-    }
-
-    public newHeartbeat(id: string, term: number): void {
+    public heartbeat(id: string, term: number): void {
         if (term > this.term) {
             this.setAsFollower(id, term);
         }
 
-        this.setElectionExpiry();
+        if (term >= this.term) {
+            this.setElectionExpiry();
+        }
     }
 
-    public requestVote(id: string, term: number): boolean {
+    public vote(id: string, term: number): boolean {
         if (term > this.term) {
-            this.leader = id;
+            this.setLeader(id);
             this.term = term;
 
             this.setElectionExpiry();
@@ -45,30 +45,36 @@ export class RaftNode {
         return false;
     }
 
+    public receiveVote(term: number): void {
+        if (term === this.term) {
+            this.numberOfVotes++;
+        }
+    }
+
     public setNumberOfNodes(numberOfNodes: number): void {
         this.numberOfNodes = this.numberOfVotes;
     }
 
-    public tick(): RaftNodeAction {
+    public tick(): RaftClientTickAction {
         const currentTimestamp: Date = new Date();
 
         if (this.state === 'follower') {
             if (currentTimestamp.getTime() > this.electionExpiry) {
                 this.setAsCandidate();
 
-                return RaftNodeAction.REQUEST_VOTES;
+                return RaftClientTickAction.REQUEST_VOTES;
             }
         } else if (this.state === 'candidate') {
             if (Math.ceil(this.numberOfNodes / 2) < this.numberOfVotes) {
                 this.setAsLeader();
 
-                return RaftNodeAction.SEND_HEARTBEAT;
+                return RaftClientTickAction.SEND_HEARTBEAT;
             }
         } else if (this.state === 'leader') {
-            return RaftNodeAction.SEND_HEARTBEAT;
+            return RaftClientTickAction.SEND_HEARTBEAT;
         }
 
-        return RaftNodeAction.NONE;
+        return RaftClientTickAction.NONE;
     }
 
     private setAsCandidate(): void {
@@ -98,6 +104,12 @@ export class RaftNode {
     private setElectionExpiry(): void {
         this.electionTimeoutInMilliseconds = (Math.random() * 10000) + 5000;
         this.electionExpiry = new Date().getTime() + this.electionTimeoutInMilliseconds;
+    }
+
+    private setLeader(id: string): void {
+        this.leader = id;
+
+        console.log(`leader set to '${this.leader}'`);
     }
 
 }

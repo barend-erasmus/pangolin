@@ -1,10 +1,11 @@
 export class Message {
 
     constructor(
-        public data: string,
+        public command: string,
+        public correlationId: string,
+        public data: any,
         public from: string,
         public to: string,
-        public type: string,
     ) {
 
     }
