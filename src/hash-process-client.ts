@@ -1,6 +1,7 @@
 import * as uuid from 'uuid';
 import { HashProcessEventDataStore } from './data-stores/hash-process-event';
 import { HashProcessEvent } from './events/hash-process';
+import { HashProcessCompletedEvent } from './events/hash-process-completed';
 import { HashProcessCreatedEvent } from './events/hash-process-created';
 import { ConsoleLogger } from './logger/console';
 import { HashProcess } from './models/hash-process';
@@ -18,6 +19,8 @@ export class HashProcessClient {
         protected rpcClient: RPCClient,
     ) {
         this.hashProcessEventDataStore = new HashProcessEventDataStore(this.consoleLogger);
+
+        this.hashProcessEventDataStore.appendHashProcessEvent(new HashProcessCreatedEvent('fC', 'D077F244DEF8A70E5EA758BD8352FCD8', this.hashProcessEventDataStore.getLastHashProcessEventIndex() + 1, 'a'));
 
         this.rpcClient.addOnMessageFn((message: Message) => this.onMessage(message));
 
@@ -51,6 +54,8 @@ export class HashProcessClient {
                 }
             }
         }
+
+        return hashProcess;
     }
 
     protected getRPCClientIdFromRaftClientId(raftClientId: string): string {
@@ -86,10 +91,19 @@ export class HashProcessClient {
 
     protected onCycle(): void {
         if (this.raftRPCClient.isLeader()) {
-            const hashProcess: HashProcess = this.getHashProcess();
+            for (const client of this.rpcClient.getClients()) {
+                const hashProcess: HashProcess = this.getHashProcess();
 
-            if (hashProcess) {
-                // TODO:
+                if (hashProcess) {
+                    this.rpcClient.send('find-hash', null, hashProcess, client.id).then((message: Message) => {
+                        const hashProcessCompletedEvent: HashProcessCompletedEvent = new HashProcessCompletedEvent(hashProcess.endValue, hashProcess.hash, this.hashProcessEventDataStore.getLastHashProcessEventIndex() + 1, message.data.result, null);
+                        const result: boolean = this.hashProcessEventDataStore.appendHashProcessEvent(hashProcessCompletedEvent);
+
+                        for (const clientForHashProcessEvent of this.rpcClient.getClients()) {
+                            this.sendAppendHashProcessEvents(clientForHashProcessEvent, hashProcessCompletedEvent);
+                        }
+                    });
+                }
             }
         }
     }
