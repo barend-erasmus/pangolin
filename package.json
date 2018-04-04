@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "gulp build & tsc & browserify ./dist/main.js -o ./dist/bundle.js",
+    "build": "gulp build & tsc",
+    "debug": "npm run build & node --inspect ./dist/app.js --dev",
     "lint": "tslint ./src/**/*.ts --fix --exclude ./src/**/*.d.ts",
-    "start": "npm run build & http-server ./dist"
+    "start": "npm run build & node ./dist/app.js --dev",
+    "test": "npm run build & mocha --timeout 30000 ./dist/**/*.test.js"
   },
   "repository": {
     "type": "git",
