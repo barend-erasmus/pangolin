@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/barend-erasmus/pangolin#readme",
   "devDependencies": {
-    "@types/node": "^9.6.1",
+    "@types/node": "^9.6.2",
     "gulp": "^3.9.1",
     "gulp-clean": "^0.4.0",
     "run-sequence": "^2.2.1"
