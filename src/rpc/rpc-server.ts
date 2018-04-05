@@ -1,4 +1,5 @@
 import * as net from 'net';
+import * as uuid from 'uuid';
 import { Message } from './message';
 import { RPC } from './rpc';
 
@@ -23,7 +24,13 @@ export class RPCServer {
     }
 
     public send(action: (message: Message) => void, message: Message): void {
+        if (!message.correlationId) {
+            message.correlationId = uuid.v4();
+        }
 
+        for (const rpc of this.rpcs) {
+            // rpc.
+        }
     }
 
     public setOnMessageAction(action: (message: Message) => any): void {
