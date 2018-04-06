@@ -1,35 +1,46 @@
 import * as net from 'net';
-import * as uuid from 'uuid';
+import { Logger } from './logger';
 import { Message } from './message';
 import { RPC } from './rpc';
 
 export class RPCServer {
 
-    protected onMessageAction: (message: Message) => any;
+    protected onMessageAction: (message: Message) => any = null;
 
     protected rpcs: RPC[] = null;
 
     protected server: net.Server = null;
 
-    constructor(protected port: number) {
+    constructor(
+        protected logger: Logger,
+        protected port: number,
+    ) {
+        this.rpcs = [];
+
         this.server = net.createServer((socket: net.Socket) => {
-            const rpc: RPC = new RPC(socket);
+            const rpc: RPC = new RPC(logger, socket);
 
             rpc.setOnMessageAction(this.onMessageAction);
 
             this.rpcs.push(rpc);
         });
-
-        this.listen();
     }
 
-    public send(action: (message: Message) => void, message: Message): void {
-        if (!message.correlationId) {
-            message.correlationId = uuid.v4();
+    public close(): void {
+        for (const rpc of this.rpcs) {
+            rpc.close();
         }
 
+        this.server.close();
+    }
+
+    public listen(): void {
+        this.server.listen(this.port);
+    }
+
+    public send(message: Message): void {
         for (const rpc of this.rpcs) {
-            // rpc.
+            rpc.send(message);
         }
     }
 
@@ -41,7 +52,4 @@ export class RPCServer {
         }
     }
 
-    protected listen(): void {
-        this.server.listen();
-    }
 }

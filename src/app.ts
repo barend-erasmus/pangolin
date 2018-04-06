@@ -1,18 +1,38 @@
-import { IStorageProvider } from './write-ahead-log/interfaces/storage-provider';
-import { LogEntry } from './write-ahead-log/models/log-entry';
-import { InMemoryStorageProvider } from './write-ahead-log/storage-providers/in-memory';
-import { WriteAheadLog } from './write-ahead-log/write-ahead-log';
+import { Logger } from './rpc/logger';
+import { Message } from './rpc/message';
+import { RPCClient } from './rpc/rpc-client';
+import { RPCServer } from './rpc/rpc-server';
 
-const storageProvider: IStorageProvider = new InMemoryStorageProvider();
+(async () => {
+    const logger: Logger = new Logger();
 
-const writeAheadLog: WriteAheadLog = new WriteAheadLog(storageProvider);
+    const rpcServer1: RPCServer = new RPCServer(logger, 5001);
+    rpcServer1.listen();
 
-writeAheadLog.command('1', 'SET 10');
-writeAheadLog.command('1', 'SET 20');
-writeAheadLog.commit('1');
-writeAheadLog.command('2', 'SET 40');
-writeAheadLog.command('2', 'SET 80');
+    const rpcServer2: RPCServer = new RPCServer(logger, 5002);
+    rpcServer2.setOnMessageAction((message: Message) => {
+        console.log(message.payload);
 
-const rollbackLogEntries: LogEntry[] = writeAheadLog.recover();
+        return 'OK';
+    });
+    rpcServer2.listen();
 
-console.log(rollbackLogEntries);
+    const rpcServer3: RPCServer = new RPCServer(logger, 5003);
+    rpcServer3.listen();
+
+    const rpcServer1Client1: RPCClient = new RPCClient('localhost', logger, 5002);
+    await rpcServer1Client1.connect();
+
+    const rpcServer1Client2: RPCClient = new RPCClient('localhost', logger, 5003);
+    await rpcServer1Client2.connect();
+
+    const response: Message = await rpcServer1Client1.send(new Message('show', null, 'hello world'));
+    console.log(response.payload);
+
+    rpcServer1.close();
+    rpcServer2.close();
+    rpcServer3.close();
+
+    rpcServer1Client1.close();
+    rpcServer1Client2.close();
+})();
