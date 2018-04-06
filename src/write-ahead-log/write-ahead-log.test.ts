@@ -9,14 +9,14 @@ describe('WriteAheadLog', () => {
 
     let writeAheadLog: WriteAheadLog = null;
 
-    before(() => {
+    beforeEach(() => {
         const storageProvider: IStorageProvider = new InMemoryStorageProvider();
         writeAheadLog = new WriteAheadLog(storageProvider);
     });
 
     describe('recover', () => {
 
-        it('should return 2 log entries', async () => {
+        it('should return 2 log entries', () => {
             writeAheadLog.command('1', 'SET 10');
             writeAheadLog.command('1', 'SET 20');
             writeAheadLog.commit('1');
