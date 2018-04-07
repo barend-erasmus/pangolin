@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import 'mocha';
 import { Logger } from './logger';
-import { Message } from './message';
+import { Message } from './models/message';
 import { RPCClient } from './rpc-client';
 import { RPCServer } from './rpc-server';
 

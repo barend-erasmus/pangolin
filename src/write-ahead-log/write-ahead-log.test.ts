@@ -17,11 +17,11 @@ describe('WriteAheadLog', () => {
     describe('recover', () => {
 
         it('should return 2 log entries', () => {
-            writeAheadLog.command('1', 'SET 10');
-            writeAheadLog.command('1', 'SET 20');
-            writeAheadLog.commit('1');
-            writeAheadLog.command('2', 'SET 40');
-            writeAheadLog.command('2', 'SET 80');
+            writeAheadLog.command(1, 'SET 10');
+            writeAheadLog.command(1, 'SET 20');
+            writeAheadLog.commit(1);
+            writeAheadLog.command(2, 'SET 40');
+            writeAheadLog.command(2, 'SET 80');
 
             const rollbackLogEntries: LogEntry[] = writeAheadLog.recover();
 

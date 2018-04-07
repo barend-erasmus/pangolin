@@ -1,6 +1,6 @@
 import * as net from 'net';
 import { Logger } from './logger';
-import { Message } from './message';
+import { Message } from './models/message';
 import { RPC } from './rpc';
 
 export class RPCServer {

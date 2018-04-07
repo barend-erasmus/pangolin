@@ -1,7 +1,7 @@
 import * as net from 'net';
 import * as uuid from 'uuid';
 import { Logger } from './logger';
-import { Message } from './message';
+import { Message } from './models/message';
 
 export class RPC {
 

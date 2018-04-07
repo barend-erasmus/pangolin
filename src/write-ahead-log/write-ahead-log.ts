@@ -11,15 +11,15 @@ export class WriteAheadLog {
 
     }
 
-    public abort(id: string): void {
+    public abort(id: number): void {
         this.storageProvider.write(new LogEntry(id, null, 'abort'));
     }
 
-    public command(id: string, payload: any): void {
+    public command(id: number, payload: any): void {
         this.storageProvider.write(new LogEntry(id, payload, 'command'));
     }
 
-    public commit(id: string): void {
+    public commit(id: number): void {
         this.storageProvider.write(new LogEntry(id, null, 'commit'));
     }
 
@@ -28,9 +28,9 @@ export class WriteAheadLog {
 
         let logEntry: LogEntry = this.storageProvider.logEntryAt(this.logEntryIndex);
 
-        const abortedIds: string[] = [];
+        const abortedIds: number[] = [];
 
-        const committedIds: string[] = [];
+        const committedIds: number[] = [];
 
         while (logEntry) {
             if (logEntry.type === 'commit') {

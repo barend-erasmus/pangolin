@@ -1,9 +1,8 @@
 export class LogEntry {
 
     constructor(
-        public id: number,
+        public index: number,
         public payload: any,
-        public type: string,
     ) {
 
     }
