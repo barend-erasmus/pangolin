@@ -1,38 +1,81 @@
-import { Logger } from './rpc/logger';
-import { Message } from './rpc/message';
-import { RPCClient } from './rpc/rpc-client';
-import { RPCServer } from './rpc/rpc-server';
+import { AppendEntriesRequest } from './raft-consensus-algorithm/models/append-entries-request';
+import { LogEntry } from './raft-consensus-algorithm/models/log-entry';
+import { State } from './raft-consensus-algorithm/models/state';
+import { VoteRequest } from './raft-consensus-algorithm/models/vote-request';
+import { RaftConsensusAlgorithm } from './raft-consensus-algorithm/raft-consensus-algorithm';
 
-(async () => {
-    const logger: Logger = new Logger();
+const node1: RaftConsensusAlgorithm = new RaftConsensusAlgorithm();
+const node2: RaftConsensusAlgorithm = new RaftConsensusAlgorithm();
+const node3: RaftConsensusAlgorithm = new RaftConsensusAlgorithm();
 
-    const rpcServer1: RPCServer = new RPCServer(logger, 5001);
-    rpcServer1.listen();
+node1.setOnSendAppendEntriesRequest(async (logEntries: LogEntry[], state: State) => {
+    console.log(`node1 => onSendAppendEntriesRequest`);
 
-    const rpcServer2: RPCServer = new RPCServer(logger, 5002);
-    rpcServer2.setOnMessageAction((message: Message) => {
-        console.log(message.payload);
+    const handleAppendEntriesRequest: AppendEntriesRequest = new AppendEntriesRequest(state.votedFor, logEntries, state.term);
 
-        return 'OK';
-    });
-    rpcServer2.listen();
+    return [
+        node2.handleAppendEntriesRequest(handleAppendEntriesRequest),
+        node3.handleAppendEntriesRequest(handleAppendEntriesRequest),
+    ];
+});
 
-    const rpcServer3: RPCServer = new RPCServer(logger, 5003);
-    rpcServer3.listen();
+node1.setOnSendVoteRequest(async (state: State) => {
+    console.log(`node1 => onSendVoteRequest`);
 
-    const rpcServer1Client1: RPCClient = new RPCClient('localhost', logger, 5002);
-    await rpcServer1Client1.connect();
+    const voteRequest: VoteRequest = new VoteRequest('node1', state.term);
 
-    const rpcServer1Client2: RPCClient = new RPCClient('localhost', logger, 5003);
-    await rpcServer1Client2.connect();
+    return [
+        node2.handleVoteRequest(voteRequest),
+        node3.handleVoteRequest(voteRequest),
+    ];
+});
 
-    const response: Message = await rpcServer1Client1.send(new Message('show', null, 'hello world'));
-    console.log(response.payload);
+node2.setOnSendAppendEntriesRequest(async (logEntries: LogEntry[], state: State) => {
+    console.log(`node2 => onSendAppendEntriesRequest`);
 
-    rpcServer1.close();
-    rpcServer2.close();
-    rpcServer3.close();
+    const handleAppendEntriesRequest: AppendEntriesRequest = new AppendEntriesRequest(state.votedFor, logEntries, state.term);
 
-    rpcServer1Client1.close();
-    rpcServer1Client2.close();
-})();
+    return [
+        node1.handleAppendEntriesRequest(handleAppendEntriesRequest),
+        node3.handleAppendEntriesRequest(handleAppendEntriesRequest),
+    ];
+});
+
+node2.setOnSendVoteRequest(async (state: State) => {
+    console.log(`node2 => onSendVoteRequest`);
+
+    const voteRequest: VoteRequest = new VoteRequest('node2', state.term);
+
+    return [
+        node1.handleVoteRequest(voteRequest),
+        node3.handleVoteRequest(voteRequest),
+    ];
+});
+
+node3.setOnSendAppendEntriesRequest(async (logEntries: LogEntry[], state: State) => {
+    console.log(`node3 => onSendAppendEntriesRequest`);
+
+    const handleAppendEntriesRequest: AppendEntriesRequest = new AppendEntriesRequest(state.votedFor, logEntries, state.term);
+
+    return [
+        node1.handleAppendEntriesRequest(handleAppendEntriesRequest),
+        node2.handleAppendEntriesRequest(handleAppendEntriesRequest),
+    ];
+});
+
+node3.setOnSendVoteRequest(async (state: State) => {
+    console.log(`node3 => onSendVoteRequest`);
+
+    const voteRequest: VoteRequest = new VoteRequest('node3', state.term);
+
+    return [
+        node1.handleVoteRequest(voteRequest),
+        node2.handleVoteRequest(voteRequest),
+    ];
+});
+
+setInterval(() => {
+    node1.tick();
+    node2.tick();
+    node3.tick();
+}, 1000);
