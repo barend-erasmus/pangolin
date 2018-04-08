@@ -1,4 +1,4 @@
-export class AppendEntriesResponse {
+export class HeartbeatResponse {
 
     constructor(
         public term: number,

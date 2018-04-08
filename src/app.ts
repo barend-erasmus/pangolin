@@ -1,4 +1,4 @@
-import { AppendEntriesRequest } from './raft-consensus-algorithm/models/append-entries-request';
+import { HeartbeatRequest } from './raft-consensus-algorithm/models/heartbeat-request';
 import { LogEntry } from './raft-consensus-algorithm/models/log-entry';
 import { State } from './raft-consensus-algorithm/models/state';
 import { VoteRequest } from './raft-consensus-algorithm/models/vote-request';
@@ -8,14 +8,14 @@ const node1: RaftConsensusAlgorithm = new RaftConsensusAlgorithm();
 const node2: RaftConsensusAlgorithm = new RaftConsensusAlgorithm();
 const node3: RaftConsensusAlgorithm = new RaftConsensusAlgorithm();
 
-node1.setOnSendAppendEntriesRequest(async (logEntries: LogEntry[], state: State) => {
+node1.setOnSendHeartbeatRequest(async (state: State) => {
     console.log(`node1 => onSendAppendEntriesRequest`);
 
-    const handleAppendEntriesRequest: AppendEntriesRequest = new AppendEntriesRequest(state.votedFor, logEntries, state.term);
+    const heartbeatRequest: HeartbeatRequest = new HeartbeatRequest(state.term);
 
     return [
-        node2.handleAppendEntriesRequest(handleAppendEntriesRequest),
-        node3.handleAppendEntriesRequest(handleAppendEntriesRequest),
+        node2.handleHeartbeatRequest(heartbeatRequest),
+        node3.handleHeartbeatRequest(heartbeatRequest),
     ];
 });
 
@@ -30,14 +30,14 @@ node1.setOnSendVoteRequest(async (state: State) => {
     ];
 });
 
-node2.setOnSendAppendEntriesRequest(async (logEntries: LogEntry[], state: State) => {
+node2.setOnSendHeartbeatRequest(async (state: State) => {
     console.log(`node2 => onSendAppendEntriesRequest`);
 
-    const handleAppendEntriesRequest: AppendEntriesRequest = new AppendEntriesRequest(state.votedFor, logEntries, state.term);
+    const heartbeatRequest: HeartbeatRequest = new HeartbeatRequest(state.term);
 
     return [
-        node1.handleAppendEntriesRequest(handleAppendEntriesRequest),
-        node3.handleAppendEntriesRequest(handleAppendEntriesRequest),
+        node1.handleHeartbeatRequest(heartbeatRequest),
+        node3.handleHeartbeatRequest(heartbeatRequest),
     ];
 });
 
@@ -52,14 +52,14 @@ node2.setOnSendVoteRequest(async (state: State) => {
     ];
 });
 
-node3.setOnSendAppendEntriesRequest(async (logEntries: LogEntry[], state: State) => {
+node3.setOnSendHeartbeatRequest(async (state: State) => {
     console.log(`node3 => onSendAppendEntriesRequest`);
 
-    const handleAppendEntriesRequest: AppendEntriesRequest = new AppendEntriesRequest(state.votedFor, logEntries, state.term);
+    const heartbeatRequest: HeartbeatRequest = new HeartbeatRequest(state.term);
 
     return [
-        node1.handleAppendEntriesRequest(handleAppendEntriesRequest),
-        node2.handleAppendEntriesRequest(handleAppendEntriesRequest),
+        node1.handleHeartbeatRequest(heartbeatRequest),
+        node2.handleHeartbeatRequest(heartbeatRequest),
     ];
 });
 

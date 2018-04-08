@@ -1,5 +1,5 @@
-import { AppendEntriesRequest } from './models/append-entries-request';
-import { AppendEntriesResponse } from './models/append-entries-response';
+import { HeartbeatRequest } from './models/heartbeat-request';
+import { HeartbeatResponse } from './models/heartbeat-response';
 import { LogEntry } from './models/log-entry';
 import { State } from './models/state';
 import { VoteRequest } from './models/vote-request';
@@ -9,21 +9,21 @@ export class RaftConsensusAlgorithm {
 
     protected electionTimeout: number = null;
 
-    protected onSendAppendEntriesRequest: (logEntries: LogEntry[], state: State) => Promise<AppendEntriesResponse[]> = null;
+    protected onSendHeartbeatRequest: (state: State) => Promise<HeartbeatResponse[]> = null;
 
     protected onSendVoteRequest: (state: State) => Promise<VoteResponse[]> = null;
 
     protected state: State = new State(0, false, true, false, [], null);
 
-    public handleAppendEntriesRequest(appendEntriesRequest: AppendEntriesRequest): AppendEntriesResponse {
-        if (this.state.term < appendEntriesRequest.term) {
-            return new AppendEntriesResponse(this.state.term, false);
+    public handleHeartbeatRequest(heartbeatRequest: HeartbeatRequest): HeartbeatResponse {
+        if (this.state.term < heartbeatRequest.term) {
+            return new HeartbeatResponse(this.state.term, false);
         }
 
         this.resetElectionTimeout();
 
-        if (this.state.term > appendEntriesRequest.term) {
-            this.state.term = appendEntriesRequest.term;
+        if (this.state.term > heartbeatRequest.term) {
+            this.state.term = heartbeatRequest.term;
             this.state.setAsFollower();
         }
 
@@ -37,7 +37,7 @@ export class RaftConsensusAlgorithm {
 
         // this.state.logEntries = this.state.logEntries.concat(appendEntriesRequest.logEntries);
 
-        return new AppendEntriesResponse(this.state.term, true);
+        return new HeartbeatResponse(this.state.term, true);
     }
 
     public handleVoteRequest(voteRequest: VoteRequest): VoteResponse {
@@ -75,8 +75,8 @@ export class RaftConsensusAlgorithm {
         }
     }
 
-    public setOnSendAppendEntriesRequest(action: (logEntries: LogEntry[], state: State) => Promise<AppendEntriesResponse[]>): void {
-        this.onSendAppendEntriesRequest = action;
+    public setOnSendHeartbeatRequest(action: (state: State) => Promise<HeartbeatResponse[]>): void {
+        this.onSendHeartbeatRequest = action;
     }
 
     public setOnSendVoteRequest(action: (state: State) => Promise<VoteResponse[]>): void {
@@ -105,7 +105,7 @@ export class RaftConsensusAlgorithm {
     }
 
     protected async tickLeader(): Promise<void> {
-        const appendEntriesResponses: AppendEntriesResponse[] = await this.onSendAppendEntriesRequest([], this.state);
+        const appendEntriesResponses: HeartbeatResponse[] = await this.onSendHeartbeatRequest(this.state);
     }
 
 }
