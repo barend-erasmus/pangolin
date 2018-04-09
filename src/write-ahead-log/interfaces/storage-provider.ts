@@ -1,6 +1,7 @@
 import { LogEntry } from '../models/log-entry';
 
 export interface IStorageProvider {
-    logEntryAt(index: number): LogEntry;
-    write(logEntry: LogEntry): void;
+    close(): void;
+    logEntryAt(index: number): Promise<LogEntry>;
+    write(logEntry: LogEntry): Promise<void>;
 }

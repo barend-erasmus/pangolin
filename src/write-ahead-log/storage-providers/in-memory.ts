@@ -5,7 +5,11 @@ export class InMemoryStorageProvider implements IStorageProvider {
 
     protected logEntries: LogEntry[] = [];
 
-    public logEntryAt(index: number): LogEntry {
+    public close(): void {
+
+    }
+
+    public async logEntryAt(index: number): Promise<LogEntry> {
         if (this.logEntries.length - 1 - index < 0) {
             return null;
         }
@@ -13,7 +17,7 @@ export class InMemoryStorageProvider implements IStorageProvider {
         return this.logEntries[this.logEntries.length - 1 - index];
     }
 
-    public write(logEntry: LogEntry): void {
+    public async write(logEntry: LogEntry): Promise<void> {
         this.logEntries.push(logEntry);
     }
 

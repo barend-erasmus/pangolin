@@ -2,7 +2,7 @@ import { IStorageProvider } from '../../../write-ahead-log/interfaces/storage-pr
 import { DiskStorageProvider } from '../../../write-ahead-log/storage-providers/disk';
 import { WriteAheadLog } from '../../../write-ahead-log/write-ahead-log';
 
-const storageProvider: IStorageProvider = new DiskStorageProvider('./my-file.log');
+const storageProvider: IStorageProvider = new DiskStorageProvider(false, './my-file.log');
 const writeAheadLog: WriteAheadLog = new WriteAheadLog(storageProvider);
 
 const numberOfLogEntries: number = 1000000;

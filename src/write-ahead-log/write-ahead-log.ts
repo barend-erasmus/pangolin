@@ -11,22 +11,26 @@ export class WriteAheadLog {
 
     }
 
-    public abort(id: number): void {
-        this.storageProvider.write(new LogEntry(id, null, 'abort'));
+    public close(): void {
+        this.storageProvider.close();
     }
 
-    public command(id: number, payload: any): void {
-        this.storageProvider.write(new LogEntry(id, payload, 'command'));
+    public async abort(id: number): Promise<void> {
+        await this.storageProvider.write(new LogEntry(id, null, 'abort'));
     }
 
-    public commit(id: number): void {
-        this.storageProvider.write(new LogEntry(id, null, 'commit'));
+    public async command(id: number, payload: any): Promise<void> {
+        await this.storageProvider.write(new LogEntry(id, payload, 'command'));
     }
 
-    public recover(): LogEntry[] {
+    public async commit(id: number): Promise<void> {
+        await this.storageProvider.write(new LogEntry(id, null, 'commit'));
+    }
+
+    public async recover(): Promise<LogEntry[]> {
         const rollbackLogEntries: LogEntry[] = [];
 
-        let logEntry: LogEntry = this.storageProvider.logEntryAt(this.logEntryIndex);
+        let logEntry: LogEntry = await this.storageProvider.logEntryAt(this.logEntryIndex);
 
         const abortedIds: number[] = [];
 
@@ -49,7 +53,7 @@ export class WriteAheadLog {
 
             this.logEntryIndex ++;
 
-            logEntry = this.storageProvider.logEntryAt(this.logEntryIndex);
+            logEntry = await this.storageProvider.logEntryAt(this.logEntryIndex);
         }
 
         this.logEntryIndex = 0;
