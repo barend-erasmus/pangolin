@@ -3,8 +3,6 @@ import { LogEntry } from './models/log-entry';
 
 export class WriteAheadLog {
 
-    protected logEntryIndex: number = 0;
-
     constructor(
         protected storageProvider: IStorageProvider,
     ) {
@@ -30,7 +28,9 @@ export class WriteAheadLog {
     public async recover(): Promise<LogEntry[]> {
         const rollbackLogEntries: LogEntry[] = [];
 
-        let logEntry: LogEntry = await this.storageProvider.logEntryAt(this.logEntryIndex);
+        let logEntryIndex: number = 0;
+
+        let logEntry: LogEntry = await this.storageProvider.logEntryAt(logEntryIndex);
 
         const abortedIds: number[] = [];
 
@@ -51,12 +51,12 @@ export class WriteAheadLog {
                 }
             }
 
-            this.logEntryIndex ++;
+            logEntryIndex ++;
 
-            logEntry = await this.storageProvider.logEntryAt(this.logEntryIndex);
+            logEntry = await this.storageProvider.logEntryAt(logEntryIndex);
         }
 
-        this.logEntryIndex = 0;
+        logEntryIndex = 0;
 
         return rollbackLogEntries;
     }

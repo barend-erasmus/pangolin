@@ -20,17 +20,17 @@ export class InMemoryBufferStorageProvider implements IStorageProvider {
     }
 
     public async logEntryAt(index: number): Promise<LogEntry> {
-        if (this.logEntries.length - (index + 1) > 0) {
+        if (this.logEntries.length - (index + 1) >= 0) {
             return this.logEntries[this.logEntries.length - (index + 1)];
         }
 
-        return this.diskStorageProvider.logEntryAt(index);
+        return this.diskStorageProvider.logEntryAt(index - this.logEntries.length);
     }
 
     public async write(logEntry: LogEntry): Promise<void> {
         this.logEntries.push(logEntry);
 
-        if (this.logEntries.length > this.bufferSize) {
+        if (this.logEntries.length >= this.bufferSize) {
             await this.flush();
             this.logEntries = [];
         }

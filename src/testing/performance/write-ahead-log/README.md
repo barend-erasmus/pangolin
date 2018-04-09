@@ -1,5 +1,36 @@
 # Performance of Write Ahead Log (WAL)
 
+## Reads
+
+### Disk
+
+| Type | # of Records | Time taken in ms | Records per second |
+| ---- | ------------ | ---------------- | ------------------ |
+| HDD  | 5 000        | 157              | 31 847.1337        |
+| SSD  | 5 000        | 150              | 33 333.3333        |
+
+
+### In-Memory
+
+| # of Records | Time taken in ms | Records per second |
+| ------------ | ---------------- | ------------------ |
+| 5 000        | 6                | 833 333.3333       |
+
+### Disk with In-Memory Buffer
+
+| Type | # of Records | Buffer Size | Time taken in ms | Records per second |
+| ---- | ------------ | ----------- | ---------------- | ------------------ |
+| HDD  | 5 000        | 50          | 163              | 30 674.8466        |
+| HDD  | 5 000        | 100         | 160              | 31 250             |
+| HDD  | 5 000        | 500         | 154              | 32 467.5324        |
+| HDD  | 5 000        | 1 000       | 149              | 33 557.0469        |
+| HDD  | 5 000        | 2 000       | 171              | 29 239.7660        |
+| SSD  | 5 000        | 50          | 133              | 37 593.9849        |
+| SSD  | 5 000        | 100         | 130              | 38 461.5384        |
+| SSD  | 5 000        | 500         | 128              | 39 062.50000       |
+| SSD  | 5 000        | 1 000       | 130              | 38 461.5384        |
+| SSD  | 5 000        | 2 000       | 110              | 45 454.5454        |
+
 ## Writes
 
 ### Disk
@@ -14,7 +45,7 @@
 
 | # of Records | Time taken in ms | Records per second |
 | ------------ | ---------------- | ------------------ |
-| 5 000        | 1                | 5 000 000          |
+| 5 000        | 12               | 416 666.6666       |
 
 ### Disk with In-Memory Buffer
 
