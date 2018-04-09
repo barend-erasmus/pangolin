@@ -5,7 +5,7 @@
 ```typescript
 const logger: Logger = new Logger();
 
-rpcClient = new RPCClient('127.0.0.1', logger, {
+const rpcClient = new RPCClient('127.0.0.1', logger, {
     handle: async (message: Message) => {
         if (message.payload === 'PING') {
             return 'PONG';
@@ -15,7 +15,7 @@ rpcClient = new RPCClient('127.0.0.1', logger, {
     },
 }, 5001);
 
-rpcServer = new RPCServer(logger, {
+const rpcServer = new RPCServer(logger, {
     handle: async (message: Message) => {
         if (message.payload === 'PING') {
             return 'PONG';
