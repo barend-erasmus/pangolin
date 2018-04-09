@@ -2,7 +2,7 @@
 
 [White Paper](https://raft.github.io/raft.pdf)
 
-## Code Example
+## Usage Example
 
 ```typescript
 import { InMemoryTransportProtocol } from './in-memory-transport-protocol';

@@ -4,8 +4,8 @@ import { IStorageProvider } from './interfaces/storage-provider';
 import { LogEntry } from './models/log-entry';
 import { DiskStorageProvider } from './storage-providers/disk';
 import { InMemoryStorageProvider } from './storage-providers/in-memory';
-import { WriteAheadLog } from './write-ahead-log';
 import { InMemoryBufferStorageProvider } from './storage-providers/in-memory-buffer';
+import { WriteAheadLog } from './write-ahead-log';
 
 describe('WriteAheadLog - DiskStorageProvider', () => {
 

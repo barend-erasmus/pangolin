@@ -1,4 +1,4 @@
-# Performance of Write Ahead Log (WAL)
+# Performance of Write-Ahead Log (WAL)
 
 ## Reads
 

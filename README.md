@@ -1,6 +1,6 @@
 # Pangolin
 
-## Implentations
+## Implementations
 
 * [Raft Consensus Algorithm]()
 
