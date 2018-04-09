@@ -1,5 +1,3 @@
-import { LogEntry } from './log-entry';
-
 export class State {
 
     constructor(
@@ -7,7 +5,6 @@ export class State {
         public isCandidate: boolean,
         public isFollower: boolean,
         public isLeader: boolean,
-        public logEntries: LogEntry[],
         public votedFor: string,
     ) {
 

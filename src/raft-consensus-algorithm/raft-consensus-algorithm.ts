@@ -1,6 +1,6 @@
+import { ITransportProtocol } from './interfaces/transport-protocol';
 import { HeartbeatRequest } from './models/heartbeat-request';
 import { HeartbeatResponse } from './models/heartbeat-response';
-import { LogEntry } from './models/log-entry';
 import { State } from './models/state';
 import { VoteRequest } from './models/vote-request';
 import { VoteResponse } from './models/vote-response';
@@ -9,11 +9,13 @@ export class RaftConsensusAlgorithm {
 
     protected electionTimeout: number = null;
 
-    protected onSendHeartbeatRequest: (state: State) => Promise<HeartbeatResponse[]> = null;
+    protected state: State = new State(0, false, true, false, null);
 
-    protected onSendVoteRequest: (state: State) => Promise<VoteResponse[]> = null;
+    constructor(
+        protected transportProtocol: ITransportProtocol,
+    ) {
 
-    protected state: State = new State(0, false, true, false, [], null);
+    }
 
     public handleHeartbeatRequest(heartbeatRequest: HeartbeatRequest): HeartbeatResponse {
         if (this.state.term < heartbeatRequest.term) {
@@ -26,16 +28,6 @@ export class RaftConsensusAlgorithm {
             this.state.term = heartbeatRequest.term;
             this.state.setAsFollower();
         }
-
-        // if (!appendEntriesRequest.logEntries || appendEntriesRequest.logEntries.length === 0) {
-        //     return new AppendEntriesResponse(this.state.currentTerm, true);
-        // }
-
-        // if (this.state.lastLogEntryIndex() + 1 !== appendEntriesRequest.logEntries[0].index) {
-        //     return new AppendEntriesResponse(this.state.currentTerm, false);
-        // }
-
-        // this.state.logEntries = this.state.logEntries.concat(appendEntriesRequest.logEntries);
 
         return new HeartbeatResponse(this.state.term, true);
     }
@@ -61,6 +53,10 @@ export class RaftConsensusAlgorithm {
         return new VoteResponse(true, this.state.term);
     }
 
+    public setTransportProtocol(transportProtocol: ITransportProtocol): void {
+        this.transportProtocol = transportProtocol;
+    }
+
     public tick(): void {
         if (!this.electionTimeout) {
             this.resetElectionTimeout();
@@ -73,14 +69,6 @@ export class RaftConsensusAlgorithm {
         } else if (this.state.isLeader) {
             this.tickLeader();
         }
-    }
-
-    public setOnSendHeartbeatRequest(action: (state: State) => Promise<HeartbeatResponse[]>): void {
-        this.onSendHeartbeatRequest = action;
-    }
-
-    public setOnSendVoteRequest(action: (state: State) => Promise<VoteResponse[]>): void {
-        this.onSendVoteRequest = action;
     }
 
     protected hasExceededElectionTime(): boolean {
@@ -96,7 +84,7 @@ export class RaftConsensusAlgorithm {
             this.state.term++;
             this.state.setAsCandidate();
 
-            const voteResponses: VoteResponse[] = await this.onSendVoteRequest(this.state);
+            const voteResponses: VoteResponse[] = await this.transportProtocol.sendVoteRequest(this.state);
 
             if (voteResponses.filter((voteResponse: VoteResponse) => voteResponse.granted && voteResponse.term === this.state.term).length > voteResponses.length / 2) {
                 this.state.setAsLeader();
@@ -105,7 +93,7 @@ export class RaftConsensusAlgorithm {
     }
 
     protected async tickLeader(): Promise<void> {
-        const appendEntriesResponses: HeartbeatResponse[] = await this.onSendHeartbeatRequest(this.state);
+        const appendEntriesResponses: HeartbeatResponse[] = await this.transportProtocol.sendHeartbeatRequest(this.state);
     }
 
 }

@@ -18,16 +18,25 @@ describe('RPC', () => {
     beforeEach(async () => {
         const logger: Logger = new Logger();
 
-        rpcClient = new RPCClient('127.0.0.1', logger, 5001);
+        rpcClient = new RPCClient('127.0.0.1', logger, {
+            handle: async (message: Message) => {
+                if (message.payload === 'PING') {
+                    return 'PONG';
+                }
 
-        rpcServer = new RPCServer(logger, 5001);
-        rpcServer.setOnMessageAction((message: Message) => {
-            if (message.payload ===  'PING') {
-                return 'PONG';
-            }
+                return 'ERROR';
+            },
+        }, 5001);
 
-            return 'ERROR';
-        });
+        rpcServer = new RPCServer(logger, {
+            handle: async (message: Message) => {
+                if (message.payload === 'PING') {
+                    return 'PONG';
+                }
+
+                return 'ERROR';
+            },
+        }, 5001);
 
         rpcServer.listen();
         await rpcClient.connect();

@@ -1,4 +1,5 @@
 import * as net from 'net';
+import { IMessageHandler } from './interfaces/message-handler';
 import { Logger } from './logger';
 import { Message } from './models/message';
 import { RPC } from './rpc';
@@ -12,6 +13,7 @@ export class RPCClient {
     constructor(
         protected host: string,
         protected logger: Logger,
+        protected messageHandler: IMessageHandler,
         protected port: number,
     ) {
         this.socket = new net.Socket();
@@ -29,7 +31,7 @@ export class RPCClient {
                     return;
                 }
 
-                this.rpc = new RPC(this.logger, this.socket);
+                this.rpc = new RPC(this.logger, this.messageHandler, this.socket);
 
                 resolve();
             });
@@ -38,10 +40,6 @@ export class RPCClient {
 
     public send(message: Message): Promise<Message> {
         return this.rpc.send(message);
-    }
-
-    public setOnMessageAction(action: (message: Message) => any): void {
-        this.rpc.setOnMessageAction(action);
     }
 
 }
