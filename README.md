@@ -2,7 +2,7 @@
 
 ## What is Pangolin?
 
-
+The Pangolin Project is a collection of algorithms mostly used in distributed systems.
 
 ## Implementations
 
