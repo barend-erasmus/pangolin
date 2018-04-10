@@ -3,9 +3,7 @@
 ## Usage Example
 
 ```typescript
-const logger: Logger = new Logger();
-
-const rpcClient = new RPCClient('127.0.0.1', logger, {
+const rpcClient = new RPCClient('127.0.0.1', {
     handle: async (message: Message) => {
         if (message.payload === 'PING') {
             return 'PONG';
@@ -15,7 +13,7 @@ const rpcClient = new RPCClient('127.0.0.1', logger, {
     },
 }, 5001);
 
-const rpcServer = new RPCServer(logger, {
+const rpcServer = new RPCServer({
     handle: async (message: Message) => {
         if (message.payload === 'PING') {
             return 'PONG';

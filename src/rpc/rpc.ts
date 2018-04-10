@@ -1,22 +1,17 @@
 import * as net from 'net';
 import * as uuid from 'uuid';
 import { IMessageHandler } from './interfaces/message-handler';
-import { Logger } from './logger';
 import { Message } from './models/message';
 
 export class RPC {
 
-    protected correlationActions: Array<{
-        reject: (error: Error) => void,
-        resolve: (message: Message) => void,
-    }> = null;
+    protected correlationActions: {} = null;
 
     constructor(
-        protected logger: Logger,
         protected messageHandler: IMessageHandler,
         protected socket: net.Socket,
     ) {
-        this.correlationActions = [];
+        this.correlationActions = {};
 
         this.addListenersToSocket();
     }
@@ -43,7 +38,7 @@ export class RPC {
         let socketBufferIndex: number = -1;
 
         this.socket.on('error', (err: Error) => {
-            this.logger.error(err.message, err);
+
         });
 
         this.socket.on('data', (data: Buffer) => {
@@ -74,23 +69,26 @@ export class RPC {
 
                         delete this.correlationActions[message.correlationId];
                     } else {
-                       this.messageHandler.handle(message).then((response: any) => {
+                        this.messageHandler.handle(message).then((response: any) => {
                             this.sendMessage(new Message(message.command, message.correlationId, response), this.socket);
                         });
                     }
 
                     setTimeout(() => {
-                        const action: {
-                            reject: (error: Error) => void,
-                            resolve: (message: Message) => void,
-                        } = this.correlationActions[message.correlationId];
+                        if (this.hasCorrelationAction(message.correlationId)) {
 
-                        if (action.reject) {
-                            action.reject(new Error('TIMEOUT'));
+                            const action: {
+                                reject: (error: Error) => void,
+                                resolve: (message: Message) => void,
+                            } = this.correlationActions[message.correlationId];
+
+                            if (action.reject) {
+                                action.reject(new Error('TIMEOUT'));
+                            }
+
+                            this.correlationActions[message.correlationId].reject = undefined;
+                            this.correlationActions[message.correlationId].resolve = undefined;
                         }
-
-                        this.correlationActions[message.correlationId].reject = undefined;
-                        this.correlationActions[message.correlationId].resolve = undefined;
                     }, 3000);
 
                     continue;

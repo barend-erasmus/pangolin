@@ -1,6 +1,5 @@
 import * as net from 'net';
 import { IMessageHandler } from './interfaces/message-handler';
-import { Logger } from './logger';
 import { Message } from './models/message';
 import { RPC } from './rpc';
 
@@ -11,14 +10,13 @@ export class RPCServer {
     protected server: net.Server = null;
 
     constructor(
-        protected logger: Logger,
         protected messageHandler: IMessageHandler,
         protected port: number,
     ) {
         this.rpcs = [];
 
         this.server = net.createServer((socket: net.Socket) => {
-            const rpc: RPC = new RPC(logger, this.messageHandler, socket);
+            const rpc: RPC = new RPC(this.messageHandler, socket);
 
             this.rpcs.push(rpc);
         });

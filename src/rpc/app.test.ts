@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import 'mocha';
-import { Logger } from './logger';
 import { Message } from './models/message';
 import { RPCClient } from './rpc-client';
 import { RPCServer } from './rpc-server';
@@ -16,9 +15,7 @@ describe('RPC', () => {
     });
 
     beforeEach(async () => {
-        const logger: Logger = new Logger();
-
-        rpcClient = new RPCClient('127.0.0.1', logger, {
+        rpcClient = new RPCClient('127.0.0.1', {
             handle: async (message: Message) => {
                 if (message.payload === 'PING') {
                     return 'PONG';
@@ -28,7 +25,7 @@ describe('RPC', () => {
             },
         }, 5001);
 
-        rpcServer = new RPCServer(logger, {
+        rpcServer = new RPCServer({
             handle: async (message: Message) => {
                 if (message.payload === 'PING') {
                     return 'PONG';

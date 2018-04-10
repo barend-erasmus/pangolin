@@ -9,11 +9,11 @@ import { WriteAheadLog } from '../../../write-ahead-log/write-ahead-log';
     const storageProviders: {} = {
         disk: new DiskStorageProvider(true, 'C:/Temp/my-file-1.log'),
         inMemory: new InMemoryStorageProvider(),
-        inMemoryBuffer50: new InMemoryBufferStorageProvider(50, new DiskStorageProvider(false, 'C:/Temp/my-file-2.log')),
         inMemoryBuffer100: new InMemoryBufferStorageProvider(100, new DiskStorageProvider(false, 'C:/Temp/my-file-3.log')),
-        inMemoryBuffer500: new InMemoryBufferStorageProvider(500, new DiskStorageProvider(false, 'C:/Temp/my-file-4.log')),
         inMemoryBuffer1000: new InMemoryBufferStorageProvider(1000, new DiskStorageProvider(false, 'C:/Temp/my-file-5.log')),
         inMemoryBuffer2000: new InMemoryBufferStorageProvider(2000, new DiskStorageProvider(false, 'C:/Temp/my-file-6.log')),
+        inMemoryBuffer50: new InMemoryBufferStorageProvider(50, new DiskStorageProvider(false, 'C:/Temp/my-file-2.log')),
+        inMemoryBuffer500: new InMemoryBufferStorageProvider(500, new DiskStorageProvider(false, 'C:/Temp/my-file-4.log')),
     };
 
     for (const key of Object.keys(storageProviders)) {
