@@ -42,6 +42,10 @@ export class RaftConsensusAlgorithm {
             this.state.votedFor = null;
         }
 
+        if (this.state.isLeader || this.state.isCandidate) {
+            return new VoteResponse(false, this.state.term);
+        }
+
         if (this.state.votedFor) {
             return new VoteResponse(false, this.state.term);
         }

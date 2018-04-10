@@ -1,45 +1,43 @@
-import { Message } from './web-socket-relay-server/models/message';
-import { WebSocketRelayClient } from './web-socket-relay-server/web-socket-relay-client';
+import { DistributedBrowserAgent } from './distributed-browser/distributed-browser-agent';
 import { WebSocketRelayServer } from './web-socket-relay-server/web-socket-relay-server';
 
 (async () => {
-    const webSocketRelayClient1: WebSocketRelayClient = new WebSocketRelayClient('ws://127.0.0.1:5001', {
-        handle: async (message: Message) => {
-            if (message.payload === 'PING') {
-                return 'PONG';
-            }
-
-            return 'ERROR';
-        },
-    });
-
-    const webSocketRelayClient2: WebSocketRelayClient = new WebSocketRelayClient('ws://127.0.0.1:5001', {
-        handle: async (message: Message) => {
-            if (message.payload === 'PING') {
-                return 'PONG';
-            }
-
-            return 'ERROR';
-        },
-    });
-
     const webSocketRelayServer: WebSocketRelayServer = new WebSocketRelayServer(5001);
 
     webSocketRelayServer.listen();
-    await webSocketRelayClient1.connect();
-    await webSocketRelayClient2.connect();
 
-    await webSocketRelayClient1.handshake();
-    await webSocketRelayClient2.handshake();
+    const agent1: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
+    const agent2: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
+    const agent3: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
+    const agent4: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
+    const agent5: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
+    const agent6: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
 
-    await webSocketRelayClient1.refreshConnections();
-    await webSocketRelayClient2.refreshConnections();
+    await agent1.connect();
+    console.log('agent 1 connected');
 
-    const response: Message = await webSocketRelayClient1.send(new Message('command', null, webSocketRelayClient1.connection.id, 'PING', webSocketRelayClient1.connections[0].id));
+    await agent2.connect();
+    console.log('agent 2 connected');
 
-    console.log(response);
+    await agent3.connect();
+    console.log('agent 3 connected');
 
-    webSocketRelayClient1.close();
-    webSocketRelayClient2.close();
-    webSocketRelayServer.close();
+    await agent4.connect();
+    console.log('agent 4 connected');
+
+    await agent5.connect();
+    console.log('agent 5 connected');
+
+    await agent6.connect();
+    console.log('agent 6 connected');
+
+    setTimeout(() => {
+        agent1.close();
+        agent2.close();
+        agent3.close();
+        agent4.close();
+        agent5.close();
+        agent6.close();
+        webSocketRelayServer.close();
+    }, 100000);
 })();

@@ -29,6 +29,12 @@ export class WebSocketRelayClient {
 
     public connect(): Promise<void> {
         return new Promise((resolve: () => void, reject: (error: Error) => void) => {
+            if (this.connection.socket.readyState) {
+                this.addListenersToSocket();
+                resolve();
+                return;
+            }
+
             this.connection.socket.on('open', () => {
                 this.addListenersToSocket();
                 resolve();
@@ -110,6 +116,7 @@ export class WebSocketRelayClient {
     }
 
     protected sendMessage(connection: Connection, message: Message): void {
+        console.log(`${message.from} -> ${message.to}`);
         connection.socket.send(JSON.stringify(message));
     }
 
