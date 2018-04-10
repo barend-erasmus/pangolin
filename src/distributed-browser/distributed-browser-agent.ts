@@ -11,6 +11,10 @@ export class DistributedBrowserAgent {
 
     protected messageHandler: IMessageHandler = null;
 
+    protected refreshConnectionsInterval: NodeJS.Timer = null;
+
+    protected tickInterval: NodeJS.Timer = null;
+
     protected transportProtocol: ITransportProtocol = null;
 
     protected webSocketRelayClient: WebSocketRelayClient = null;
@@ -28,6 +32,9 @@ export class DistributedBrowserAgent {
     }
 
     public close(): void {
+        clearInterval(this.refreshConnectionsInterval);
+        clearInterval(this.tickInterval);
+
         this.webSocketRelayClient.close();
     }
 
@@ -39,11 +46,11 @@ export class DistributedBrowserAgent {
     }
 
     protected setIntervals(): void {
-        setInterval(() => {
+        this.refreshConnectionsInterval = setInterval(() => {
             this.webSocketRelayClient.refreshConnections();
         }, 3000);
 
-        setInterval(() => {
+        this.tickInterval = setInterval(() => {
             this.raftConsensusAlgorithm.tick();
         }, 2000);
     }

@@ -9,6 +9,10 @@ export class RaftConsensusAlgorithm {
 
     protected electionTimeout: number = null;
 
+    protected maximumElectionTimeout: number = 10000;
+
+    protected minimumElectionTimeout: number = 3000;
+
     protected state: State = new State(0, false, true, false, null);
 
     constructor(
@@ -24,7 +28,7 @@ export class RaftConsensusAlgorithm {
 
         this.resetElectionTimeout();
 
-        if (this.state.term > heartbeatRequest.term) {
+        if (this.state.term > heartbeatRequest.term || this.state.isCandidate) {
             this.state.term = heartbeatRequest.term;
             this.state.setAsFollower();
         }
@@ -80,7 +84,7 @@ export class RaftConsensusAlgorithm {
     }
 
     protected resetElectionTimeout(): void {
-        this.electionTimeout = new Date().getTime() + Math.floor(Math.random() * 9000) + 1000;
+        this.electionTimeout = new Date().getTime() + Math.floor(Math.random() * (this.maximumElectionTimeout - this.minimumElectionTimeout)) + this.minimumElectionTimeout;
     }
 
     protected async tickFollower(): Promise<void> {

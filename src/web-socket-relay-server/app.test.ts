@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import 'mocha';
+import { Message as RPCMessage } from './../rpc/models/message';
 import { Message } from './models/message';
 import { WebSocketRelayClient } from './web-socket-relay-client';
 import { WebSocketRelayServer } from './web-socket-relay-server';
@@ -53,7 +54,7 @@ describe('WebSocketRelayServer', () => {
     describe('Ping Pong', () => {
 
         it('should receive PONG', async () => {
-            const response: Message = await webSocketRelayClient1.send(new Message('command', null, webSocketRelayClient1.connection.id, 'PING', webSocketRelayClient1.connections[0].id));
+            const response: RPCMessage = await webSocketRelayClient1.send(new Message('command', null, webSocketRelayClient1.connection.id, 'PING', webSocketRelayClient1.connections[0].id));
 
             expect(response.payload).to.be.eq('PONG');
         });

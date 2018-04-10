@@ -1,13 +1,13 @@
 import { expect } from 'chai';
 import 'mocha';
 import { Message } from './models/message';
-import { RPCClient } from './rpc-client';
-import { RPCServer } from './rpc-server';
+import { TCPRPCClient } from './tcp-rpc-client';
+import { TCPRPCServer } from './tcp-rpc-server';
 
-describe('RPC', () => {
+describe('TCPRPC', () => {
 
-    let rpcClient: RPCClient = null;
-    let rpcServer: RPCServer = null;
+    let rpcClient: TCPRPCClient = null;
+    let rpcServer: TCPRPCServer = null;
 
     afterEach(() => {
         rpcClient.close();
@@ -15,7 +15,7 @@ describe('RPC', () => {
     });
 
     beforeEach(async () => {
-        rpcClient = new RPCClient('127.0.0.1', {
+        rpcClient = new TCPRPCClient('127.0.0.1', {
             handle: async (message: Message) => {
                 if (message.payload === 'PING') {
                     return 'PONG';
@@ -25,7 +25,7 @@ describe('RPC', () => {
             },
         }, 5001);
 
-        rpcServer = new RPCServer({
+        rpcServer = new TCPRPCServer({
             handle: async (message: Message) => {
                 if (message.payload === 'PING') {
                     return 'PONG';

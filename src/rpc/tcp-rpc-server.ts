@@ -2,8 +2,9 @@ import * as net from 'net';
 import { IMessageHandler } from './interfaces/message-handler';
 import { Message } from './models/message';
 import { RPC } from './rpc';
+import { TCPRPC } from './tcp-rpc';
 
-export class RPCServer {
+export class TCPRPCServer {
 
     protected rpcs: RPC[] = null;
 
@@ -16,7 +17,7 @@ export class RPCServer {
         this.rpcs = [];
 
         this.server = net.createServer((socket: net.Socket) => {
-            const rpc: RPC = new RPC(this.messageHandler, socket);
+            const rpc: RPC = new TCPRPC(this.messageHandler, socket);
 
             this.rpcs.push(rpc);
         });

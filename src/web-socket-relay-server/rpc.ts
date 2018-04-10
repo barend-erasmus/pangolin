@@ -43,7 +43,7 @@ export abstract class RPC {
             delete this.correlationActions[message.correlationId];
         } else {
             this.messageHandler.handle(message).then((response: any) => {
-                this.sendMessage(new Message(message.command, message.correlationId, response));
+                this.sendMessage(new Message(message.command, message.correlationId, message.to, response, message.from));
             });
         }
 

@@ -2,8 +2,9 @@ import * as net from 'net';
 import { IMessageHandler } from './interfaces/message-handler';
 import { Message } from './models/message';
 import { RPC } from './rpc';
+import { TCPRPC } from './tcp-rpc';
 
-export class RPCClient {
+export class TCPRPCClient {
 
     protected rpc: RPC = null;
 
@@ -29,7 +30,7 @@ export class RPCClient {
                     return;
                 }
 
-                this.rpc = new RPC(this.messageHandler, this.socket);
+                this.rpc = new TCPRPC(this.messageHandler, this.socket);
 
                 resolve();
             });
