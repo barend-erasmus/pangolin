@@ -11,7 +11,14 @@ export class VectorClock {
     public static compare(clock1: {}, clock2: {}): number {
         const result: number[] = [];
 
-        for (const key of Object.keys(clock1)) {
+        const clock1Keys: string[] = Object.keys(clock1);
+        const clock2Keys: string[] = Object.keys(clock2);
+
+        if (clock1Keys.length !== clock2Keys.length) {
+            return clock1Keys.length - clock2Keys.length;
+        }
+
+        for (const key of clock1Keys) {
             result.push(clock1[key] - clock2[key]);
         }
 
