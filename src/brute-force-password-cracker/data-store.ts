@@ -10,7 +10,9 @@ export class DataStore {
     constructor(
         protected vectorClock: VectorClock,
     ) {
-        this.logEntries = [];
+        this.logEntries = [
+            new LogEntry('root', new Hash([], 'd077f244def8a70e5ea758bd8352fcd8'), 'hash', vectorClock.increment()),
+        ];
     }
 
     public getHashes(): Hash[] {

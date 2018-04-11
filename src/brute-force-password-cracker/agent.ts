@@ -60,7 +60,9 @@ export class BruteForcePasswordCrackerAgent {
                 }
 
                 if (!hash.solved()) {
+                    console.log('aa');
                     // TODO
+                    break;
                 }
             }
         }, (Math.random() * 10000) + 3000);
