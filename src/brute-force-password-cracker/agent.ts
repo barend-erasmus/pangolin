@@ -11,6 +11,8 @@ export class BruteForcePasswordCrackerAgent {
 
     protected dataStore: DataStore = null;
 
+    protected id: string = null;
+
     protected messageHandler: WebSocketRelayClientMessageHandler = null;
 
     protected vectorClock: VectorClock = null;
@@ -23,6 +25,8 @@ export class BruteForcePasswordCrackerAgent {
         this.vectorClock = new VectorClock(uuid.v4());
 
         this.dataStore = new DataStore(this.vectorClock);
+
+        this.id = uuid.v4();
 
         this.messageHandler = new WebSocketRelayClientMessageHandler(this.dataStore);
 
@@ -40,7 +44,7 @@ export class BruteForcePasswordCrackerAgent {
         }, 2000);
 
         setInterval(() => {
-            this.sendLogEntryToAll(new LogEntry(uuid.v4(), new Date().getTime(), 'testing', this.vectorClock.increment()));
+            this.sendLogEntryToAll(new LogEntry(`${this.id}-${uuid.v4()}`, new Date().getTime(), 'testing', this.vectorClock.increment()));
         }, (Math.random() * 10000) + 3000);
     }
 

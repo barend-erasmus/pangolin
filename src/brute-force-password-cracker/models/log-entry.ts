@@ -1,7 +1,7 @@
 export class LogEntry {
 
     constructor(
-        public id: number,
+        public id: string,
         public payload: any,
         public type: string,
         public vectorClock: {},
