@@ -1,43 +1,57 @@
-import { DistributedBrowserAgent } from './distributed-browser/distributed-browser-agent';
-import { WebSocketRelayServer } from './web-socket-relay-server/web-socket-relay-server';
+import { VectorClock } from './vector-clock/vector-clock';
 
-(async () => {
-    const webSocketRelayServer: WebSocketRelayServer = new WebSocketRelayServer(5001);
+const vectorClock1: VectorClock = new VectorClock('1');
+const vectorClock2: VectorClock = new VectorClock('2');
+const vectorClock3: VectorClock = new VectorClock('3');
 
-    webSocketRelayServer.listen();
+function mergeAll(): void {
+    vectorClock1.merge(vectorClock2.get());
+    vectorClock1.merge(vectorClock3.get());
 
-    const agent1: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
-    const agent2: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
-    const agent3: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
-    const agent4: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
-    const agent5: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
-    const agent6: DistributedBrowserAgent = new DistributedBrowserAgent('ws://127.0.0.1:5001');
+    vectorClock2.merge(vectorClock1.get());
+    vectorClock2.merge(vectorClock3.get());
 
-    await agent1.connect();
-    console.log('agent 1 connected');
+    vectorClock3.merge(vectorClock1.get());
+    vectorClock3.merge(vectorClock2.get());
+}
 
-    await agent2.connect();
-    console.log('agent 2 connected');
+const eventA = {
+    name: 'A',
+    timestamp: vectorClock1.increment(),
+};
 
-    await agent3.connect();
-    console.log('agent 3 connected');
+mergeAll();
 
-    await agent4.connect();
-    console.log('agent 4 connected');
+const eventB = {
+    name: 'B',
+    timestamp: vectorClock2.increment(),
+};
 
-    await agent5.connect();
-    console.log('agent 5 connected');
+// mergeAll();
 
-    await agent6.connect();
-    console.log('agent 6 connected');
+const eventC = {
+    name: 'C',
+    timestamp: vectorClock1.increment(),
+};
 
-    setTimeout(() => {
-        agent1.close();
-        agent2.close();
-        agent3.close();
-        agent4.close();
-        agent5.close();
-        agent6.close();
-        webSocketRelayServer.close();
-    }, 100000);
-})();
+mergeAll();
+
+const eventD = {
+    name: 'D',
+    timestamp: vectorClock1.increment(),
+};
+
+mergeAll();
+
+let events: Array<{ name: string, timestamp: any }> = [
+    eventA,
+    eventB,
+    eventC,
+    eventD,
+];
+
+events = events.sort((a: { name: string, timestamp: any }, b: { name: string, timestamp: any }) => {
+    return VectorClock.compare(a.timestamp, b.timestamp);
+});
+
+console.log(events);
