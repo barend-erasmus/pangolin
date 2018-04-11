@@ -4,6 +4,8 @@ import { VectorClock } from '../vector-clock/vector-clock';
 import { Message } from '../web-socket-relay-server/models/message';
 import { WebSocketRelayClient } from '../web-socket-relay-server/web-socket-relay-client';
 import { DataStore } from './data-store';
+import { Hash } from './models/hash';
+import { HashAttempt } from './models/hash-attempt';
 import { LogEntry } from './models/log-entry';
 import { WebSocketRelayClientMessageHandler } from './web-socket-relay-client-message-handler';
 
@@ -44,7 +46,23 @@ export class BruteForcePasswordCrackerAgent {
         }, 2000);
 
         setInterval(() => {
-            this.sendLogEntryToAll(new LogEntry(`${this.id}-${uuid.v4()}`, new Date().getTime(), 'testing', this.vectorClock.increment()));
+            const hashes: Hash[] = this.dataStore.getHashes();
+
+            for (const hash of hashes) {
+                const expiredHashAttempt: HashAttempt = hash.getExpiredAttempt();
+
+                if (expiredHashAttempt) {
+                    expiredHashAttempt.lastProcessedTimestamp = new Date().getTime();
+
+                    const logEntry: LogEntry = new LogEntry(`${this.id}-${uuid.v4()}`, expiredHashAttempt, 'hash-attempt', this.vectorClock.increment());
+                    this.sendLogEntryToAll(logEntry);
+                    break;
+                }
+
+                if (!hash.solved()) {
+                    // TODO
+                }
+            }
         }, (Math.random() * 10000) + 3000);
     }
 
