@@ -6,6 +6,7 @@ The Pangolin Project is a collection of algorithms mostly used in distributed sy
 
 ## Implementations
 
+* [Lamport Timestamp](https://github.com/barend-erasmus/pangolin/tree/master/src/lamport-timestamp)
 * [Raft Consensus Algorithm](https://github.com/barend-erasmus/pangolin/tree/master/src/raft-consensus-algorithm)
 * [Remote Procedure Call (RPC)](https://github.com/barend-erasmus/pangolin/tree/master/src/rpc)
 * [Vector Clock](https://github.com/barend-erasmus/pangolin/tree/master/src/vector-clock)

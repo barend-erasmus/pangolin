@@ -23,5 +23,5 @@ const timestamps = [
     timestamp4,
 ];
 
-timestamp.sort(VectorClock.compare);
+timestamps.sort(VectorClock.compare);
 ```

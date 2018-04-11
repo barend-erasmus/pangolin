@@ -21,6 +21,10 @@ export class RaftConsensusAlgorithm {
 
     }
 
+    public getLeader(): string {
+        return this.state.votedFor;
+    }
+
     public handleHeartbeatRequest(heartbeatRequest: HeartbeatRequest): HeartbeatResponse {
         if (this.state.term < heartbeatRequest.term) {
             return new HeartbeatResponse(this.state.term, false);
@@ -59,6 +63,10 @@ export class RaftConsensusAlgorithm {
         this.resetElectionTimeout();
 
         return new VoteResponse(true, this.state.term);
+    }
+
+    public isLeader(): boolean {
+        return this.state.isLeader;
     }
 
     public setTransportProtocol(transportProtocol: ITransportProtocol): void {

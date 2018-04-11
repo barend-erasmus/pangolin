@@ -28,7 +28,7 @@ export class WebSocketRelayClient extends RPC {
 
     public connect(): Promise<void> {
         return new Promise((resolve: () => void, reject: (error: Error) => void) => {
-            if (this.connection.socket.readyState) {
+            if (this.connection.socket.readyState === 1) {
                 this.addListenersToSocket();
                 resolve();
                 return;
