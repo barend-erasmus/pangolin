@@ -28,6 +28,8 @@ export class BruteForcePasswordCrackerAgent {
 
         this.dataStore = new DataStore(this.vectorClock);
 
+        this.dataStore.insertLogEntry(new LogEntry('root', new Hash([], 'd077f244def8a70e5ea758bd8352fcd8'), 'hash', this.vectorClock.increment()));
+
         this.id = uuid.v4();
 
         this.messageHandler = new WebSocketRelayClientMessageHandler(this.dataStore);

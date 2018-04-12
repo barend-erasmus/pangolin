@@ -8,21 +8,16 @@ export class AlphaNumericCounter {
 
     }
 
-    public incrementBy(value: number): string {
-        const indexes: number[] = this.value.split('').map((x) => this.characters.indexOf(x));
-
-        indexes[indexes.length - 1] += value;
-
-        this.balance(indexes);
-
-        return indexes.map((x) => this.characters[x]).join('');
-    }
-
-    protected balance(indexes: number[]): number[] {
+    public balance(indexes: number[]): number[] {
         for (let index = indexes.length - 1; index > 0; index--) {
             if (indexes[index] >= this.characters.length - 1) {
                 indexes[index - 1] += Math.floor(indexes[index] / this.characters.length);
                 indexes[index] = indexes[index] % this.characters.length;
+            }
+
+            if (indexes[index] < 0) {
+                indexes[index - 1] -= Math.floor(Math.abs(indexes[index]) / this.characters.length) + 1;
+                indexes[index] += (Math.floor(Math.abs(indexes[index]) / this.characters.length) + 1) * this.characters.length;
             }
         }
 
@@ -33,4 +28,29 @@ export class AlphaNumericCounter {
 
         return indexes;
     }
+
+    public decrementBy(value: number): string {
+        const indexes: number[] = this.value.split('').map((x) => this.characters.indexOf(x));
+
+        indexes[indexes.length - 1] -= value;
+
+        this.balance(indexes);
+
+        return indexes.filter((x) => x >= 0).map((x) => this.characters[x]).join('');
+    }
+
+    public incrementBy(value: number): string {
+        const indexes: number[] = this.value.split('').map((x) => this.characters.indexOf(x));
+
+        indexes[indexes.length - 1] += value;
+
+        this.balance(indexes);
+
+        return indexes.filter((x) => x >= 0).map((x) => this.characters[x]).join('');
+    }
+
+    public set(value: string): void {
+        this.value = value;
+    }
+
 }
