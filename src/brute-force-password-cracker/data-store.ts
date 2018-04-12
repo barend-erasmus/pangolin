@@ -56,7 +56,9 @@ export class DataStore {
     }
 
     public insertLogEntry(logEntry: LogEntry): void {
-        if (!this.logEntries.find((x) => x.id === logEntry.id)) {
+        const existingLogEntry: LogEntry = this.logEntries.find((x) => x.id === logEntry.id);
+
+        if (!existingLogEntry) {
             const index: number = this.logEntries.filter((x: LogEntry) => VectorClock.compare(x.vectorClock, logEntry.vectorClock) <= 0).length;
 
             this.logEntries.splice(index, 0, logEntry);

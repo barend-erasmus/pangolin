@@ -1,3 +1,4 @@
+import * as BigNumber from 'big-number';
 import { HashAttempt } from './hash-attempt';
 
 export class Hash {
@@ -11,7 +12,7 @@ export class Hash {
 
     public getExpiredAttempt(): HashAttempt {
         for (const attempt of this.attempts) {
-            if (attempt.expired()) {
+            if (!attempt.processed && attempt.expired()) {
                 return attempt;
             }
         }
@@ -27,6 +28,20 @@ export class Hash {
         }
 
         return false;
+    }
+
+    public findMaximumEnd(): string {
+        let maximum: BigNumber = BigNumber(-1);
+
+        for (const attempt of this.attempts) {
+            const end: BigNumber = BigNumber(attempt.end);
+
+            if (end.gt(maximum)) {
+                maximum = end;
+            }
+        }
+
+        return maximum.toString();
     }
 
 }

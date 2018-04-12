@@ -1,56 +1,55 @@
+import * as BigNumber from 'big-number';
+
 export class AlphaNumericCounter {
 
     private characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
     constructor(
-        private value: string,
+        private value: BigNumber,
     ) {
 
     }
 
-    public balance(indexes: number[]): number[] {
-        for (let index = indexes.length - 1; index > 0; index--) {
-            if (indexes[index] >= this.characters.length - 1) {
-                indexes[index - 1] += Math.floor(indexes[index] / this.characters.length);
-                indexes[index] = indexes[index] % this.characters.length;
-            }
+    public decrement(value: BigNumber): BigNumber {
+        this.value = this.value.minus(value);
 
-            if (indexes[index] < 0) {
-                indexes[index - 1] -= Math.floor(Math.abs(indexes[index]) / this.characters.length) + 1;
-                indexes[index] += (Math.floor(Math.abs(indexes[index]) / this.characters.length) + 1) * this.characters.length;
-            }
+        return this.value;
+    }
+
+    public difference(value: BigNumber): BigNumber {
+        return this.value.minus(value);
+    }
+
+    public get(): BigNumber {
+        return this.value;
+    }
+
+    public increment(value: BigNumber): BigNumber {
+        this.value = this.value.plus(value);
+
+        return this.value;
+    }
+
+    public toString(): string {
+        if (this.value.lt(1)) {
+            return this.characters[0];
         }
 
-        if (indexes[0] >= this.characters.length - 1) {
-            indexes.unshift(Math.floor(indexes[0] / this.characters.length) - 1);
-            indexes[1] = indexes[1] % this.characters.length;
+        let convertionValue: BigNumber = BigNumber(this.value.toString());
+
+        let workingValue: BigNumber = BigNumber(this.value.toString());
+
+        let result: string = '';
+
+        while (workingValue.gt(0)) {
+            convertionValue = workingValue.mod(this.characters.length);
+
+            result = this.characters[convertionValue] + result;
+
+            workingValue = workingValue.divide(this.characters.length);
         }
 
-        return indexes;
-    }
-
-    public decrementBy(value: number): string {
-        const indexes: number[] = this.value.split('').map((x) => this.characters.indexOf(x));
-
-        indexes[indexes.length - 1] -= value;
-
-        this.balance(indexes);
-
-        return indexes.filter((x) => x >= 0).map((x) => this.characters[x]).join('');
-    }
-
-    public incrementBy(value: number): string {
-        const indexes: number[] = this.value.split('').map((x) => this.characters.indexOf(x));
-
-        indexes[indexes.length - 1] += value;
-
-        this.balance(indexes);
-
-        return indexes.filter((x) => x >= 0).map((x) => this.characters[x]).join('');
-    }
-
-    public set(value: string): void {
-        this.value = value;
+        return result;
     }
 
 }

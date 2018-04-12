@@ -1,33 +1,32 @@
+import * as BigNumber from 'big-number';
 import { expect } from 'chai';
 import 'mocha';
 import { AlphaNumericCounter } from './alpha-numeric-counter';
 
 describe('AlphaNumericCounter', () => {
 
-    const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter('a');
+    describe('toString', () => {
 
-    describe('decrementBy', () => {
+        it('should return a', async () => {
+            const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(BigNumber(0));
 
-        it('a9 by 5 = a4', async () => {
-            alphaNumericCounter.set('a9');
+            const result: string = alphaNumericCounter.toString();
 
-            const result: string = alphaNumericCounter.decrementBy(5);
-
-            expect(result).to.be.eq('a4');
+            expect(result).to.be.eq('a');
         });
 
-        it('a9 by 61 = aa', async () => {
-            alphaNumericCounter.set('a9');
+        it('should return b', async () => {
+            const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(BigNumber(1));
 
-            const result: string = alphaNumericCounter.decrementBy(61);
+            const result: string = alphaNumericCounter.toString();
 
-            expect(result).to.be.eq('aa');
+            expect(result).to.be.eq('b');
         });
 
-        it('a9 by 62 = 9', async () => {
-            alphaNumericCounter.set('a9');
+        it('should return 9', async () => {
+            const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(BigNumber(61));
 
-            const result: string = alphaNumericCounter.decrementBy(62);
+            const result: string = alphaNumericCounter.toString();
 
             expect(result).to.be.eq('9');
         });
