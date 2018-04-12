@@ -108,6 +108,7 @@ export class BruteForcePasswordCrackerAgent {
     }
 
     protected processHashAttempt(hashAttempt: HashAttempt): void {
+        console.log(`Processing hash attempt ${hashAttempt.start} - ${hashAttempt.end}`);
         const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(BigNumber(hashAttempt.start));
 
         while (alphaNumericCounter.get().lte(hashAttempt.end)) {

@@ -34,10 +34,10 @@ export class WebSocketRelayClient extends RPC {
                 return;
             }
 
-            this.connection.socket.on('open', () => {
+            this.connection.socket.onopen = () => {
                 this.addListenersToSocket();
                 resolve();
-            });
+            };
         });
     }
 
@@ -57,7 +57,7 @@ export class WebSocketRelayClient extends RPC {
     }
 
     protected addListenersToSocket(): void {
-        this.connection.socket.on('message', (data: WebSocket.Data) => this.onMessage(data));
+        this.connection.socket.onmessage = (event: { data: WebSocket.Data }) => this.onMessage(event.data);
     }
 
     protected onMessage(data: WebSocket.Data): void {

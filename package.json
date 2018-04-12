@@ -4,6 +4,7 @@
   "description": "",
   "scripts": {
     "build": "gulp build & tsc",
+    "build-brute-force-password-cracker": "gulp build & tsc & browserify --exclude ws ./dist/brute-force-password-cracker/app.js -o ./brute-force-password-cracker/bundle.js",
     "debug": "npm run build & node --inspect ./dist/app.js --dev",
     "lint": "tslint ./src/**/*.ts --fix --exclude ./src/**/*.d.ts",
     "start": "npm run build & node ./dist/app.js --dev",
