@@ -20,6 +20,16 @@ export class Hash {
         return null;
     }
 
+    public result(): string {
+        for (const attempt of this.attempts) {
+            if (attempt.processed && attempt.result) {
+                return attempt.result;
+            }
+        }
+
+        return null;
+    }
+
     public solved(): boolean {
         for (const attempt of this.attempts) {
             if (attempt.processed && attempt.result) {

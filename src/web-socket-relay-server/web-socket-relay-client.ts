@@ -17,13 +17,13 @@ export class WebSocketRelayClient extends RPC {
     ) {
         super(messageHandler);
 
-        if (typeof(WebSocket) === 'function') {
+        if (typeof (WebSocket) === 'function') {
             this.connection = new Connection(uuid.v4(), {
 
             }, new WebSocket(this.host));
         }
 
-        if (typeof(WebSocket) === 'object') {
+        if (typeof (WebSocket) === 'object') {
             this.connection = new Connection(uuid.v4(), {
 
             }, new (window as any).WebSocket(this.host));
@@ -42,9 +42,16 @@ export class WebSocketRelayClient extends RPC {
                 return;
             }
 
+            this.connection.socket.onerror = () => {
+                reject(new Error('Failed to connect'));
+            };
+
             this.connection.socket.onopen = () => {
-                this.addListenersToSocket();
-                resolve();
+                if (this.connection.socket.readyState === 1) {
+                    this.addListenersToSocket();
+                    resolve();
+                    return;
+                }
             };
         });
     }

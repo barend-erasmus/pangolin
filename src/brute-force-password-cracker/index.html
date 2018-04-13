@@ -33,7 +33,7 @@
                     <input type="text" class="form-control" id="hash" placeholder="Enter your hash here">
                     <small id="hash" class="form-text text-muted"></small>
                 </div>
-                <button type="submit" class="btn btn-primary">Submit</button>
+                <button onclick="onClickSubmit()" class="btn btn-primary">Submit</button>
             </div>
         </div>
     </div>
@@ -46,12 +46,23 @@
                 const hashes = BFPC.bruteForcePasswordCrackerAgent.getHashes();
 
                 const html = hashes
-                    .map((hash) => `<li class="list-group-item ${hash.solved() ? 'list-group-item-success' : 'list-group-item-danger'}">${hash.value} (${hash.attempts.length})</li>`)
+                    .map((hash) => `<li class="list-group-item ${hash.solved() ? 'list-group-item-success' : 'list-group-item-danger'}">${hash.value} (${hash.attempts.length}) -> [${hash.result()}]</li>`)
                     .join('');
 
                 document.getElementById('hashes').innerHTML = html;
             }, 3000);
         })();
+
+        function onClickSubmit() {
+           const hashInputElement = document.querySelector('input[type=text]#hash');
+
+           BFPC.bruteForcePasswordCrackerAgent.insertHash({
+               attempts: [],
+               value: hashInputElement.value,
+           });
+
+           hashInputElement.value = null;
+        }
     </script>
 </body>
 

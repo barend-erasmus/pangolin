@@ -49,6 +49,7 @@ export class HorizontalParitioningStorageProvider implements IStorageProvider {
 
         this.storageProviders[slot].write(logEntry).then(() => {
             (this.mutexes[slot] as Mutex).release();
+            console.log(`written ${logEntry.id} (${slot})`);
         });
     }
 
