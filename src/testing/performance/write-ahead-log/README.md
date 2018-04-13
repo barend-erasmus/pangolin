@@ -9,6 +9,12 @@
 | HDD  | 5 000        | 157              | 31 847.1337        |
 | SSD  | 5 000        | 150              | 33 333.3333        |
 
+### Horizontal Partitioning (6 Files)
+
+| Type | # of Records | Time taken in ms | Records per second |
+| ---- | ------------ | ---------------- | ------------------ |
+| HDD  | 5 000        | 168 755          | 29.628             |
+| SSD  | 5 000        | 5 04             | 942.6847           |
 
 ### In-Memory
 
@@ -38,8 +44,14 @@
 | Type | # of Records | Time taken in ms | Records per second |
 | ---- | ------------ | ---------------- | ------------------ |
 | HDD  | 5 000        | 168 755          | 29.628             |
-| SSD  | 5 000        | 5 04             | 942.6847           |
+| SSD  | 5 000        | 504              | 942.6847           |
 
+### Horizontal Partitioning (6 Files)
+
+| Type | # of Records | Time taken in ms | Records per second |
+| ---- | ------------ | ---------------- | ------------------ |
+| HDD  | 5 000        | 168 755          | 29.628             |
+| SSD  | 5 000        | 504              | 942.6847           |
 
 ### In-Memory
 

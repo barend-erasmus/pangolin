@@ -17,6 +17,10 @@ export class InMemoryStorageProvider implements IStorageProvider {
         return this.logEntries[this.logEntries.length - 1 - index];
     }
 
+    public async sync(): Promise<void> {
+
+    }
+
     public async write(logEntry: LogEntry): Promise<void> {
         this.logEntries.push(logEntry);
     }

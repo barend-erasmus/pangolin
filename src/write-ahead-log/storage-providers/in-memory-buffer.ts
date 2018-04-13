@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import * as stream from 'stream';
 import { IStorageProvider } from '../interfaces/storage-provider';
 import { LogEntry } from '../models/log-entry';
-import { DiskStorageProvider } from './disk';
 
 export class InMemoryBufferStorageProvider implements IStorageProvider {
 
@@ -10,13 +9,13 @@ export class InMemoryBufferStorageProvider implements IStorageProvider {
 
     constructor(
         protected bufferSize: number,
-        protected diskStorageProvider: DiskStorageProvider,
+        protected storageProvider: IStorageProvider,
     ) {
 
     }
 
     public close(): void {
-        this.diskStorageProvider.close();
+        this.storageProvider.close();
     }
 
     public async logEntryAt(index: number): Promise<LogEntry> {
@@ -24,24 +23,24 @@ export class InMemoryBufferStorageProvider implements IStorageProvider {
             return this.logEntries[this.logEntries.length - (index + 1)];
         }
 
-        return this.diskStorageProvider.logEntryAt(index - this.logEntries.length);
+        return this.storageProvider.logEntryAt(index - this.logEntries.length);
+    }
+
+    public async sync(): Promise<void> {
+        for (const logEntry of this.logEntries) {
+            await this.storageProvider.write(logEntry);
+        }
+
+        await this.storageProvider.sync();
     }
 
     public async write(logEntry: LogEntry): Promise<void> {
         this.logEntries.push(logEntry);
 
         if (this.logEntries.length >= this.bufferSize) {
-            await this.flush();
+            await this.sync();
             this.logEntries = [];
         }
-    }
-
-    protected async flush(): Promise<void> {
-        for (const logEntry of this.logEntries) {
-            await this.diskStorageProvider.write(logEntry);
-        }
-
-        await this.diskStorageProvider.sync();
     }
 
 }

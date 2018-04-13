@@ -4,6 +4,10 @@
 
 The Pangolin Project is a collection of algorithms mostly used in distributed systems.
 
+## Projects
+
+* [Brute Force Password Cracker](https://github.com/barend-erasmus/pangolin/tree/master/src/brute-force-password-cracker)
+
 ## Implementations
 
 * [Lamport Timestamp](https://github.com/barend-erasmus/pangolin/tree/master/src/lamport-timestamp)
