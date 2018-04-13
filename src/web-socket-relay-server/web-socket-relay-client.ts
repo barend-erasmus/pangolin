@@ -17,9 +17,17 @@ export class WebSocketRelayClient extends RPC {
     ) {
         super(messageHandler);
 
-        this.connection = new Connection(uuid.v4(), {
+        if (typeof(WebSocket) === 'function') {
+            this.connection = new Connection(uuid.v4(), {
 
-        }, new WebSocket(this.host));
+            }, new WebSocket(this.host));
+        }
+
+        if (typeof(WebSocket) === 'object') {
+            this.connection = new Connection(uuid.v4(), {
+
+            }, new (window as any).WebSocket(this.host));
+        }
     }
 
     public close(): void {

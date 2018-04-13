@@ -1,6 +1,8 @@
 import { BruteForcePasswordCrackerAgent } from './agent';
 
+export let bruteForcePasswordCrackerAgent: BruteForcePasswordCrackerAgent = null;
+
 (async () => {
-    const bruteForcePasswordCrackerAgent: BruteForcePasswordCrackerAgent = new BruteForcePasswordCrackerAgent('ws://localhost:5001');
+    bruteForcePasswordCrackerAgent = new BruteForcePasswordCrackerAgent('ws://localhost:5001');
     await bruteForcePasswordCrackerAgent.connect();
 })();

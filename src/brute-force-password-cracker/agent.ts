@@ -20,6 +20,10 @@ export class BruteForcePasswordCrackerAgent {
 
     protected messageHandler: WebSocketRelayClientMessageHandler = null;
 
+    protected refreshConnectionsInterval: NodeJS.Timer = null;
+
+    protected tickInterval: NodeJS.Timer = null;
+
     protected vectorClock: VectorClock = null;
 
     protected webSocketRelayClient: WebSocketRelayClient = null;
@@ -46,69 +50,37 @@ export class BruteForcePasswordCrackerAgent {
         await this.webSocketRelayClient.connect();
         await this.webSocketRelayClient.handshake();
 
-        setInterval(() => {
+        await this.webSocketRelayClient.refreshConnections();
+
+        for (let index = 0; index < this.webSocketRelayClient.connections.length; index = index + 3) {
+            const requestLogEntriesResponse: Message = await this.webSocketRelayClient.send(new Message('request-log-entries', null, this.webSocketRelayClient.connection.id, null, this.webSocketRelayClient.connections[index].id));
+
+            const logEntries: LogEntry[] = requestLogEntriesResponse.payload;
+
+            for (const logEntry of logEntries) {
+                this.dataStore.insertLogEntry(logEntry);
+            }
+        }
+
+        this.refreshConnectionsInterval = setInterval(() => {
             this.webSocketRelayClient.refreshConnections();
         }, 2000);
 
-        setInterval(() => {
-            const hashes: Hash[] = this.dataStore.getHashes();
+        this.tickInterval = setInterval(() => {
+            this.tick();
+        }, (Math.random() * 10000) + 5000);
+    }
 
-            for (const hash of hashes) {
-                if (hash.solved()) {
-                    continue;
-                }
+    public getHashes(): Hash[] {
+        return this.dataStore.getHashes();
+    }
 
-                const expiredHashAttempt: HashAttempt = hash.getExpiredAttempt();
-
-                if (expiredHashAttempt) {
-                    expiredHashAttempt.lastProcessedTimestamp = new Date().getTime();
-
-                    const logEntry: LogEntry = new LogEntry(`${this.id}-${uuid.v4()}`, expiredHashAttempt, 'hash-attempt', this.vectorClock.increment());
-                    this.sendLogEntryToAll(logEntry);
-
-                    this.processHashAttempt(expiredHashAttempt);
-
-                    break;
-                }
-
-                if (hash.attempts.length === 0) {
-                    const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(BigNumber(0));
-
-                    const start: string = alphaNumericCounter.get().toString();
-                    alphaNumericCounter.increment(BigNumber(1999));
-                    const end: string = alphaNumericCounter.get().toString();
-
-                    const hashAttempt: HashAttempt = new HashAttempt(end, hash.value, new Date().getTime(), false, null, start);
-
-                    const logEntry: LogEntry = new LogEntry(`${this.id}-${uuid.v4()}`, hashAttempt, 'hash-attempt', this.vectorClock.increment());
-                    this.sendLogEntryToAll(logEntry);
-
-                    this.processHashAttempt(hashAttempt);
-
-                    break;
-                } else {
-                    const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(BigNumber(hash.findMaximumEnd()));
-                    alphaNumericCounter.increment(BigNumber(1));
-
-                    const start: string = alphaNumericCounter.get().toString();
-                    alphaNumericCounter.increment(BigNumber(1999));
-                    const end: string = alphaNumericCounter.get().toString();
-
-                    const hashAttempt: HashAttempt = new HashAttempt(end, hash.value, new Date().getTime(), false, null, start);
-
-                    const logEntry: LogEntry = new LogEntry(`${this.id}-${uuid.v4()}`, hashAttempt, 'hash-attempt', this.vectorClock.increment());
-                    this.sendLogEntryToAll(logEntry);
-
-                    this.processHashAttempt(hashAttempt);
-
-                    break;
-                }
-            }
-        }, (Math.random() * 10000) + 3000);
+    public insertHash(hash: Hash): void {
+        const logEntry: LogEntry = new LogEntry(`${this.id}-${uuid.v4()}`, hash, 'hash', this.vectorClock.increment());
+        this.sendLogEntryToAll(logEntry);
     }
 
     protected processHashAttempt(hashAttempt: HashAttempt): void {
-        console.log(`Processing hash attempt ${hashAttempt.start} - ${hashAttempt.end}`);
         const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(BigNumber(hashAttempt.start));
 
         while (alphaNumericCounter.get().lte(hashAttempt.end)) {
@@ -117,7 +89,6 @@ export class BruteForcePasswordCrackerAgent {
             const result: string = crypto.createHash('md5').update(str).digest('hex');
 
             if (result === hashAttempt.hashValue) {
-                console.log(`SOLVED - ${str} -> ${hashAttempt.hashValue}`);
                 hashAttempt.lastProcessedTimestamp = null;
                 hashAttempt.processed = true;
                 hashAttempt.result = str;
@@ -148,6 +119,62 @@ export class BruteForcePasswordCrackerAgent {
         }
 
         this.dataStore.insertLogEntry(logEntry);
+    }
+
+    protected tick(): void {
+        const hashes: Hash[] = this.dataStore.getHashes();
+
+        for (const hash of hashes) {
+            if (hash.solved()) {
+                continue;
+            }
+
+            const expiredHashAttempt: HashAttempt = hash.getExpiredAttempt();
+
+            if (expiredHashAttempt) {
+                expiredHashAttempt.lastProcessedTimestamp = new Date().getTime();
+
+                const logEntry: LogEntry = new LogEntry(`${this.id}-${uuid.v4()}`, expiredHashAttempt, 'hash-attempt', this.vectorClock.increment());
+                this.sendLogEntryToAll(logEntry);
+
+                this.processHashAttempt(expiredHashAttempt);
+
+                break;
+            }
+
+            if (hash.attempts.length === 0) {
+                const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(BigNumber(0));
+
+                const start: string = alphaNumericCounter.get().toString();
+                alphaNumericCounter.increment(BigNumber(1999));
+                const end: string = alphaNumericCounter.get().toString();
+
+                const hashAttempt: HashAttempt = new HashAttempt(end, hash.value, new Date().getTime(), false, null, start);
+
+                const logEntry: LogEntry = new LogEntry(`${this.id}-${uuid.v4()}`, hashAttempt, 'hash-attempt', this.vectorClock.increment());
+                this.sendLogEntryToAll(logEntry);
+
+                this.processHashAttempt(hashAttempt);
+
+                break;
+            } else {
+                const alphaNumericCounter: AlphaNumericCounter = new AlphaNumericCounter(BigNumber(hash.findMaximumEnd()));
+                alphaNumericCounter.increment(BigNumber(1));
+
+                const start: string = alphaNumericCounter.get().toString();
+                alphaNumericCounter.increment(BigNumber(1999));
+                const end: string = alphaNumericCounter.get().toString();
+
+                const hashAttempt: HashAttempt = new HashAttempt(end, hash.value, new Date().getTime(), false, null, start);
+
+                const logEntry: LogEntry = new LogEntry(`${this.id}-${uuid.v4()}`, hashAttempt, 'hash-attempt', this.vectorClock.increment());
+                this.sendLogEntryToAll(logEntry);
+
+                this.processHashAttempt(hashAttempt);
+
+                break;
+            }
+        }
     }
 
 }

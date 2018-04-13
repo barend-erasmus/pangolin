@@ -2,14 +2,57 @@
 <html>
 
 <head>
-    <title>Page Title</title>
+    <title>Pangolin</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
 </head>
 
 <body>
 
-    <h1>This is a Heading</h1>
-    <p>This is a paragraph.</p>
+    <div class="jumbotron">
+        <h1 class="display-3">Welcome to Pangolin</h1>
+        <p class="lead">The Pangolin Project is a collection of algorithms mostly used in distributed systems.</p>
+        <hr class="my-4">
+        <p>This utility allows you to manage hashes in the 'Brute Force Password Cracker' Project</p>
+        <p class="lead">
+            <a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a>
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <ul class="list-group" id="hashes">
+                    <li class="list-group-item">Loading...</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="hash">Hash</label>
+                    <input type="text" class="form-control" id="hash" placeholder="Enter your hash here">
+                    <small id="hash" class="form-text text-muted"></small>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+    </div>
 
     <script src="./bundle.js"></script>
+
+    <script>
+        (function () {
+            setInterval(function () {
+                const hashes = BFPC.bruteForcePasswordCrackerAgent.getHashes();
+
+                const html = hashes
+                    .map((hash) => `<li class="list-group-item ${hash.solved() ? 'list-group-item-success' : 'list-group-item-danger'}">${hash.value} (${hash.attempts.length})</li>`)
+                    .join('');
+
+                document.getElementById('hashes').innerHTML = html;
+            }, 3000);
+        })();
+    </script>
 </body>
+
 </html>
