@@ -13,7 +13,7 @@ export class GrowOnlySet<T> {
     }
 
     public get(): T[] {
-        return this.items;
+        return this.items.slice(0);
     }
 
     public merge(growOnlySet: GrowOnlySet<T>): GrowOnlySet<T> {

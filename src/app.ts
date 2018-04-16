@@ -1,17 +1,19 @@
-import { PNCounter } from './crdts/pn-counter';
+import { TwoPhaseSet } from './crdts/two-phase-set';
 
-const pnCounter1: PNCounter = new PNCounter();
-const pnCounter2: PNCounter = new PNCounter();
+const twoPhaseSet1: TwoPhaseSet<string> = new TwoPhaseSet<string>();
+const twoPhaseSet2: TwoPhaseSet<string> = new TwoPhaseSet<string>();
 
-pnCounter1.increment(5);
-pnCounter2.decrement(3);
-pnCounter1.increment(10);
-pnCounter1.increment(3);
-pnCounter2.increment(6);
-pnCounter2.increment(9);
+twoPhaseSet1.add('hello');
+twoPhaseSet1.add('world');
 
-pnCounter1.merge(pnCounter2);
-pnCounter2.merge(pnCounter1);
+twoPhaseSet2.add('foo');
+twoPhaseSet2.add('bar');
 
-console.log(pnCounter1.get());
-console.log(pnCounter2.get());
+twoPhaseSet1.remove('foo');
+twoPhaseSet2.remove('world');
+
+twoPhaseSet1.merge(twoPhaseSet2);
+twoPhaseSet2.merge(twoPhaseSet1);
+
+console.log(twoPhaseSet1.get()); // [ 'hello', 'bar' ]
+console.log(twoPhaseSet2.get()); // [ 'bar', 'hello' ]
