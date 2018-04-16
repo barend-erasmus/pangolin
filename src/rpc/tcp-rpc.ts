@@ -23,10 +23,6 @@ export class TCPRPC extends RPC {
         let socketBuffer: Buffer = new Buffer(1024);
         let socketBufferIndex: number = -1;
 
-        this.socket.on('error', (err: Error) => {
-
-        });
-
         this.socket.on('data', (data: Buffer) => {
             for (const char of data) {
                 if (!char) {
@@ -60,10 +56,21 @@ export class TCPRPC extends RPC {
         return this.correlationActions[correlationId] ? true : false;
     }
 
-    protected sendMessage(message: Message): void {
-        const json = JSON.stringify(message);
+    protected sendMessage(message: Message): Promise<void> {
+        return new Promise((resolve: () => void, reject: (error: Error) => void) => {
+            const errorFn: (error: Error) => void = (error: Error) => {
+                this.socket.removeListener('error', errorFn);
+                reject(error);
+            };
 
-        this.socket.write(`${json}\n`);
+            this.socket.on('error', errorFn);
+
+            const json = JSON.stringify(message);
+
+            this.socket.write(`${json}\n`, () => {
+                resolve();
+            });
+        });
     }
 
 }
