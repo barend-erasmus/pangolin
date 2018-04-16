@@ -4,7 +4,7 @@
 
 ## Flow Diagram
 
-![]()
+![](https://github.com/barend-erasmus/pangolin/raw/master/images/two-phase-commit.png)
 
 ## Usage Example
 
