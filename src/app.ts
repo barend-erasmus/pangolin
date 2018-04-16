@@ -1,19 +1,16 @@
-import { TwoPhaseSet } from './crdts/two-phase-set';
+import { Cohort } from './two-phase-commit/cohort';
+import { Coordinator } from './two-phase-commit/coordinator';
 
-const twoPhaseSet1: TwoPhaseSet<string> = new TwoPhaseSet<string>();
-const twoPhaseSet2: TwoPhaseSet<string> = new TwoPhaseSet<string>();
+const cohort1: Cohort = new Cohort();
+const cohort2: Cohort = new Cohort();
+const cohort3: Cohort = new Cohort();
 
-twoPhaseSet1.add('hello');
-twoPhaseSet1.add('world');
+const coordinator: Coordinator = new Coordinator([
+    cohort1,
+    cohort2,
+    cohort3,
+]);
 
-twoPhaseSet2.add('foo');
-twoPhaseSet2.add('bar');
+coordinator.write('hello world');
 
-twoPhaseSet1.remove('foo');
-twoPhaseSet2.remove('world');
-
-twoPhaseSet1.merge(twoPhaseSet2);
-twoPhaseSet2.merge(twoPhaseSet1);
-
-console.log(twoPhaseSet1.get()); // [ 'hello', 'bar' ]
-console.log(twoPhaseSet2.get()); // [ 'bar', 'hello' ]
+console.log(coordinator.read()); // [ 'hello world' ]
