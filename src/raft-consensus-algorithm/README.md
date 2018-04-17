@@ -2,30 +2,15 @@
 
 [White Paper](https://raft.github.io/raft.pdf)
 
-## Usage Example
+## Append Entries
+    
+* Reply `false` if `term` < `currentTerm`.
+* Reply `false` if log doesn't contain an entry at `previousLogIndex` whose term matches `previousLogTerm`.
+* If an existing entry conflicts with a new one (same index but different terms), delete the existing entry and all that follow it.
+* Append any new entries not already in the log.
+* If `leaderCommit` > `commitIndex`, set `commitIndex` = min(`leaderCommit`, `index of last new entry`);
 
-```typescript
-import { InMemoryTransportProtocol } from './in-memory-transport-protocol';
-import { ITransportProtocol } from './interfaces/transport-protocol';
-import { RaftConsensusAlgorithm } from './raft-consensus-algorithm';
+## Request Vote
 
-const raftConsensusAlgorithm1 = new RaftConsensusAlgorithm(null);
-const raftConsensusAlgorithm2 = new RaftConsensusAlgorithm(null);
-const raftConsensusAlgorithm3 = new RaftConsensusAlgorithm(null);
-
-const transportProtocol: ITransportProtocol = new InMemoryTransportProtocol([
-    raftConsensusAlgorithm1,
-    raftConsensusAlgorithm2,
-    raftConsensusAlgorithm3,
-]);
-
-raftConsensusAlgorithm1.setTransportProtocol(transportProtocol);
-raftConsensusAlgorithm2.setTransportProtocol(transportProtocol);
-raftConsensusAlgorithm3.setTransportProtocol(transportProtocol);
-
-setInterval(() => {
-    raftConsensusAlgorithm1.tick();
-    raftConsensusAlgorithm2.tick();
-    raftConsensusAlgorithm3.tick();
-}, 1000);
-```
+* Reply `false` if `term` < `currentTerm`
+* If `votedFor` is `null` or `candidateId`, and candidate’s log is at least as up-to-date as receiver’s log, grant vote.
