@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import 'mocha';
-import { Message as RPCMessage } from './../rpc/models/message';
+import { Message as RPCMessage } from './../remote-procedure-call/models/message';
 import { Message } from './models/message';
 import { WebSocketRelayClient } from './web-socket-relay-client';
 import { WebSocketRelayServer } from './web-socket-relay-server';

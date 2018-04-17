@@ -1,115 +1,185 @@
+import { ILogEntryHandler } from './interfaces/log-entry-handler';
 import { ITransportProtocol } from './interfaces/transport-protocol';
-import { HeartbeatRequest } from './models/heartbeat-request';
-import { HeartbeatResponse } from './models/heartbeat-response';
+import { AppendEntriesRequest } from './models/append-entries-request';
+import { AppendEntriesResponse } from './models/append-entries-response';
 import { State } from './models/state';
 import { VoteRequest } from './models/vote-request';
 import { VoteResponse } from './models/vote-response';
 
 export class RaftConsensusAlgorithm {
 
-    protected electionTimeout: number = null;
-
-    protected maximumElectionTimeout: number = 10000;
-
-    protected minimumElectionTimeout: number = 3000;
-
-    protected state: State = new State(0, false, true, false, null);
+    protected state: State = null;
 
     constructor(
+        protected logEntryHandler: ILogEntryHandler,
         protected transportProtocol: ITransportProtocol,
     ) {
-
+        this.state = new State();
     }
 
-    public getLeader(): string {
-        return this.state.votedFor;
+    public appendEntries(appendEntriesRequest: AppendEntriesRequest): AppendEntriesResponse {
+        // Step down before handling RPC if need be.
+        if (appendEntriesRequest.term > this.state.term) {
+            this.state.defaultMatchIndex = -1;
+            this.state.defaultNextIndex = this.state.log.length;
+            this.state.matchIndex = {};
+            this.state.nextIndex = {};
+            this.state.state = 'follower';
+            this.state.term = appendEntriesRequest.term;
+            this.state.votedFor = null;
+        }
+
+        if (appendEntriesRequest.term < this.state.term) {
+            return new AppendEntriesResponse(null, null, false, this.state.term);
+        }
+
+        // TODO: Reset election timeout
+
+        if (appendEntriesRequest.previousLogIndex >= this.state.log.length) {
+            return new AppendEntriesResponse(this.state.log.length, null, false, this.state.term);
+        }
+
+        const previousLogTerm: number = this.state.log[appendEntriesRequest.previousLogIndex].term;
+
+        if (appendEntriesRequest.previousLogTerm >= 0 && previousLogTerm !== appendEntriesRequest.previousLogTerm) {
+            let firstOfTermIndex: number = appendEntriesRequest.previousLogTerm;
+
+            for (let i = appendEntriesRequest.previousLogTerm; i >= 0; i++) {
+                if (this.state.log[i].term !== previousLogTerm) {
+                    break;
+                }
+
+                firstOfTermIndex = i;
+            }
+
+            return new AppendEntriesResponse(firstOfTermIndex, previousLogTerm, false, this.state.term);
+        }
+
+        // for i from 0 to length(entries) {
+        //     index = prevLogIndex + i + 1
+        //     if index >= length(log) or log[index].term != entries[i].term {
+        //         log = log[:index] ++ entries[i:]
+        //         break
+        //     }
+        // }
+
+        // // TODO: persist Raft state
+
+        // if leaderCommit > commitIndex {
+        //     commitIndex = length(log) - 1
+        //     if commitIndex > leaderCommit {
+        //         commitIndex = leaderCommit
+        //     }
+        // }
+
+        // if commitIndex > lastApplied {
+        //     for i from lastApplied+1 to commitIndex (inclusive) {
+        //         stateMachine(log[i].command)
+        //         lastApplied = i
+        //     }
+        // }
+
+        // return (currentTerm, -1, -1, true)
+
+        return new AppendEntriesResponse(null, null, true, this.state.term);
     }
 
-    public handleHeartbeatRequest(heartbeatRequest: HeartbeatRequest): HeartbeatResponse {
-        if (this.state.term < heartbeatRequest.term) {
-            return new HeartbeatResponse(this.state.term, false);
+    public async electionTimeout(id: string): Promise<void> {
+        if (this.state.state === 'leader') {
+            return;
         }
 
-        this.resetElectionTimeout();
+        this.state.term += 1;
 
-        if (this.state.term > heartbeatRequest.term || this.state.isCandidate) {
-            this.state.term = heartbeatRequest.term;
-            this.state.setAsFollower();
+        const electionTerm: number = this.state.term;
+
+        this.state.votedFor = null;
+
+        this.state.state = 'candidate';
+
+        let numberOfVotes: number = 0;
+
+        const voteRequest: VoteRequest = new VoteRequest(id, this.state.log.length - 1, this.state.log.length === 0 ? -1 : this.state.log[this.state.log.length - 1].term, this.state.term);
+
+        const voteRequestResponses: VoteResponse[] = await this.transportProtocol.sendVoteRequest(voteRequest);
+
+        for (const voteRequestResponse of voteRequestResponses) {
+            if (voteRequestResponse.term > this.state.term) {
+                this.state.defaultMatchIndex = -1;
+                this.state.defaultNextIndex = this.state.log.length;
+                this.state.matchIndex = {};
+                this.state.nextIndex = {};
+                this.state.state = 'follower';
+                this.state.term = voteRequestResponse.term;
+                this.state.votedFor = null;
+            }
+
+            if (voteRequestResponse.granted) {
+                numberOfVotes += 1;
+            }
         }
 
-        return new HeartbeatResponse(this.state.term, true);
+        if (this.state.term !== electionTerm) {
+            return;
+        }
+
+        if (numberOfVotes <= voteRequestResponses.length / 2) {
+            this.state.state = 'follower';
+            return;
+        }
+
+        this.state.state = 'leader';
+
+        this.state.defaultMatchIndex = -1;
+        this.state.defaultNextIndex = this.state.log.length;
+        this.state.matchIndex = {};
+        this.state.nextIndex = {};
+
+        // TODO: Reset election timeout
+
+        // TODO: Send AppendEntries
     }
 
-    public handleVoteRequest(voteRequest: VoteRequest): VoteResponse {
-        if (this.state.term > voteRequest.term) {
-            return new VoteResponse(false, this.state.term);
-        }
-
-        if (this.state.term < voteRequest.term) {
+    public requestVote(voteRequest: VoteRequest): VoteResponse {
+        // Step down before handling RPC if need be.
+        if (voteRequest.term > this.state.term) {
+            this.state.defaultNextIndex = this.state.log.length;
+            this.state.matchIndex = -1;
+            this.state.nextIndex = {};
+            this.state.state = 'follower';
             this.state.term = voteRequest.term;
             this.state.votedFor = null;
         }
 
-        if (this.state.isLeader || this.state.isCandidate) {
+        // Don't vote for out-of-date candidates
+        if (voteRequest.term < this.state.term) {
             return new VoteResponse(false, this.state.term);
         }
 
-        if (this.state.votedFor) {
+        // Don't double vote
+        if (this.state.votedFor && this.state.votedFor !== voteRequest.candidateId) {
+            return new VoteResponse(false, this.state.term);
+        }
+
+        // Check how up-to-date our log is
+        const lastLogIndex: number = this.state.log.length - 1;
+
+        let lastLogTerm: number = -1;
+
+        if (this.state.log.length !== 0) {
+            lastLogTerm = this.state.log[lastLogIndex].term;
+        }
+
+        // Reject leaders with old logs
+        if (voteRequest.lastLogTerm === lastLogTerm && voteRequest.lastLogIndex < lastLogIndex) {
             return new VoteResponse(false, this.state.term);
         }
 
         this.state.votedFor = voteRequest.candidateId;
 
-        this.resetElectionTimeout();
+        // TODO: Reset election timeout
 
         return new VoteResponse(true, this.state.term);
-    }
-
-    public isLeader(): boolean {
-        return this.state.isLeader;
-    }
-
-    public setTransportProtocol(transportProtocol: ITransportProtocol): void {
-        this.transportProtocol = transportProtocol;
-    }
-
-    public tick(): void {
-        if (!this.electionTimeout) {
-            this.resetElectionTimeout();
-        }
-
-        if (this.state.isCandidate) {
-
-        } else if (this.state.isFollower) {
-            this.tickFollower();
-        } else if (this.state.isLeader) {
-            this.tickLeader();
-        }
-    }
-
-    protected hasExceededElectionTime(): boolean {
-        return new Date().getTime() > this.electionTimeout;
-    }
-
-    protected resetElectionTimeout(): void {
-        this.electionTimeout = new Date().getTime() + Math.floor(Math.random() * (this.maximumElectionTimeout - this.minimumElectionTimeout)) + this.minimumElectionTimeout;
-    }
-
-    protected async tickFollower(): Promise<void> {
-        if (this.hasExceededElectionTime()) {
-            this.state.term++;
-            this.state.setAsCandidate();
-
-            const voteResponses: VoteResponse[] = await this.transportProtocol.sendVoteRequest(this.state);
-
-            if (voteResponses.filter((voteResponse: VoteResponse) => voteResponse.granted && voteResponse.term === this.state.term).length > voteResponses.length / 2) {
-                this.state.setAsLeader();
-            }
-        }
-    }
-
-    protected async tickLeader(): Promise<void> {
-        const appendEntriesResponses: HeartbeatResponse[] = await this.transportProtocol.sendHeartbeatRequest(this.state);
     }
 
 }

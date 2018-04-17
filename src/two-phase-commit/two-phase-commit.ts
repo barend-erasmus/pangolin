@@ -1,4 +1,4 @@
-import { Mutex } from '../mutex/mutex';
+import { Mutex } from '../mutal-exclusion/mutex';
 
 export class TwoPhaseCommit {
 

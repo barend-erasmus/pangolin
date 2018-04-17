@@ -2,6 +2,8 @@
 
 ## Reads
 
+![](https://github.com/barend-erasmus/pangolin/raw/master/images/write-ahead-log-read.png)
+
 ### Disk
 
 | Type | # of Records | Time taken in ms | Records per second |
@@ -31,6 +33,8 @@
 | SSD  | 5 000        | 2 000       | 110              | 45 454.5454        |
 
 ## Writes
+
+![](https://github.com/barend-erasmus/pangolin/raw/master/images/write-ahead-log-write.png)
 
 ### Disk
 

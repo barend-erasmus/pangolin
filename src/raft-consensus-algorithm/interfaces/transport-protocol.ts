@@ -1,11 +1,12 @@
-import { HeartbeatResponse } from '../models/heartbeat-response';
+import { AppendEntriesResponse } from '../models/append-entries-response';
 import { State } from '../models/state';
+import { VoteRequest } from '../models/vote-request';
 import { VoteResponse } from '../models/vote-response';
 
 export interface ITransportProtocol {
 
-    sendHeartbeatRequest(state: State): Promise<HeartbeatResponse[]>;
+    sendAppendEntriesRequest(state: State): Promise<AppendEntriesResponse[]>;
 
-    sendVoteRequest(state: State): Promise<VoteResponse[]>;
+    sendVoteRequest(voteRequest: VoteRequest): Promise<VoteResponse[]>;
 
 }

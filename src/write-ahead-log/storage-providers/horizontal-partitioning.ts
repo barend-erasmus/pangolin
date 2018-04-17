@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as stream from 'stream';
-import { Mutex } from '../../mutex/mutex';
+import { Mutex } from '../../mutal-exclusion/mutex';
 import { IStorageProvider } from '../interfaces/storage-provider';
 import { LogEntry } from '../models/log-entry';
 
@@ -49,7 +49,6 @@ export class HorizontalParitioningStorageProvider implements IStorageProvider {
 
         this.storageProviders[slot].write(logEntry).then(() => {
             (this.mutexes[slot] as Mutex).release();
-            console.log(`written ${logEntry.id} (${slot})`);
         });
     }
 

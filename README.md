@@ -13,7 +13,7 @@ The Pangolin Project is a collection of algorithms mostly used in distributed sy
 * [Alpha-Numeric Counter](https://github.com/barend-erasmus/pangolin/tree/master/src/alpha-numeric-counter)
 * [CRDT's (Conflict-Free Data Types)](https://github.com/barend-erasmus/pangolin/tree/master/src/crdts)
 * [Lamport Timestamp](https://github.com/barend-erasmus/pangolin/tree/master/src/lamport-timestamp)
-* [Mutex (Mutual Exclusion)](https://github.com/barend-erasmus/pangolin/tree/master/src/mutex)
+* [Mutual Exclusion (Mutex)](https://github.com/barend-erasmus/pangolin/tree/master/src/mutex)
 * [Raft Consensus Algorithm](https://github.com/barend-erasmus/pangolin/tree/master/src/raft-consensus-algorithm)
 * [Remote Procedure Call (RPC)](https://github.com/barend-erasmus/pangolin/tree/master/src/rpc)
 * [Two-Phase Commit](https://github.com/barend-erasmus/pangolin/tree/master/src/two-phase-commit)
