@@ -1,10 +1,14 @@
 # Performance of Write-Ahead Log (WAL)
 
+"In computer science, write-ahead logging (WAL) is a family of techniques for providing atomicity and durability (two of the ACID properties) in database systems." ~ [Wikipedia](https://en.wikipedia.org/wiki/Write-ahead_logging)
+
 ## Reads
 
 ![](https://github.com/barend-erasmus/pangolin/raw/master/images/write-ahead-log-read.png)
 
 ### Disk
+
+* Each log entry consumes a block of up-to 24 bytes which allows for fast reading with minimal seek time.
 
 | Type | # of Records | Time taken in ms | Records per second |
 | ---- | ------------ | ---------------- | ------------------ |
@@ -13,11 +17,15 @@
 
 ### In-Memory
 
+* Each log entry are stored in an in-memory array.
+
 | # of Records | Time taken in ms | Records per second |
 | ------------ | ---------------- | ------------------ |
 | 5 000        | 6                | 833 333.3333       |
 
 ### Disk with In-Memory Buffer
+
+* The last `x` number of log entries are stored in an in-memory array which allow for fast reading of the last `x` number of log entries.
 
 | Type | # of Records | Buffer Size | Time taken in ms | Records per second |
 | ---- | ------------ | ----------- | ---------------- | ------------------ |
@@ -38,6 +46,8 @@
 
 ### Disk
 
+* Log entries are synced to disk after every write, reducing the risk of losing logs in the event of a failure.
+
 | Type | # of Records | Time taken in ms | Records per second |
 | ---- | ------------ | ---------------- | ------------------ |
 | HDD  | 5 000        | 168 755          | 29.628             |
@@ -45,11 +55,14 @@
 
 ### In-Memory
 
+
 | # of Records | Time taken in ms | Records per second |
 | ------------ | ---------------- | ------------------ |
 | 5 000        | 12               | 416 666.6666       |
 
 ### Disk with In-Memory Buffer
+
+* Log entries are synced to disk after every `x` number of logs which increases write speeds and only a small number of logs will be lost in the event of a failure.
 
 | Type | # of Records | Buffer Size | Time taken in ms | Records per second |
 | ---- | ------------ | ----------- | ---------------- | ------------------ |
