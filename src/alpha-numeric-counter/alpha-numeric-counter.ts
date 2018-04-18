@@ -13,21 +13,21 @@ export class AlphaNumericCounter {
     public decrement(value: BigNumber): BigNumber {
         this.value = this.value.minus(value);
 
-        return this.value;
+        return BigNumber(this.value);
     }
 
     public difference(value: BigNumber): BigNumber {
-        return this.value.minus(value);
+        return BigNumber(this.value.minus(value));
     }
 
     public get(): BigNumber {
-        return this.value;
+        return BigNumber(this.value);
     }
 
     public increment(value: BigNumber): BigNumber {
         this.value = this.value.plus(value);
 
-        return this.value;
+        return BigNumber(this.value);
     }
 
     public toString(): string {

@@ -26,7 +26,7 @@ export class VectorClock {
     }
 
     public get(): any {
-        return this.clock;
+        return JSON.parse(JSON.stringify(this.clock));
     }
 
     public increment(): any {
