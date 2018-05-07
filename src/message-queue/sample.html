@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Web Socket Relay Server Sample</title>
+</head>
+
+<body>
+    <label>Messages</label>
+    <ul>
+
+    </ul>
+    <script>
+        let webSocket = new WebSocket("ws://events.openservices.co.za");
+
+        webSocket.onopen = function () {
+
+            webSocket.send(JSON.stringify({
+                channel: 'hello-world',
+                type: 'subscribe',
+            }));
+
+            setInterval(function () {
+                webSocket.send(JSON.stringify({
+                    channel: 'hello-world',
+                    data: `Message sent ${new Date().toString()}`,
+                    type: 'publish',
+                }));
+            }, 5000);
+        };
+
+        webSocket.onmessage = function (event) {
+            let command = JSON.parse(event.data);
+
+            document.querySelector('ul').innerHTML += `<li>${command.data}</li>`;
+        };
+
+        webSocket.onclose = function () {
+        };
+
+    </script>
+</body>
+
+</html>
