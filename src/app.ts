@@ -24,19 +24,19 @@ async function onMessage(command: Command, client: Client): Promise<void> {
             publishCommand.data.answer,
         );
 
-        node.addCompletedHashTaskRange(computeResultCommand.hashTaskRange, computeResultCommand.answer);
+        masterNode.addCompletedHashTaskRange(computeResultCommand.hashTaskRange, computeResultCommand.answer);
     }
 
     if (publishCommand.data.type === 'join') {
         const joinCommand: JoinCommand = new JoinCommand(publishCommand.data.slaveId);
 
-        node.addWorkerProcess(joinCommand.slaveId);
+        masterNode.addWorkerProcess(joinCommand.slaveId);
     }
 }
 
 const masterId: string = uuid.v4();
 
-const node: Node = new Node(sendHashTaskRange);
+const masterNode: Node = new Node(sendHashTaskRange);
 
 const masterClient: Client = new Client('ws://events.openservices.co.za', onMessage,
     [
@@ -47,20 +47,37 @@ masterClient.connect();
 
 setInterval(() => {
     masterClient.send(new PublishCommand('hash-computing-network', new PingCommand(masterId)));
-    node.tick();
-}, 20000);
+    masterNode.tick();
+}, 5000);
 
 const slaveId: string = uuid.v4();
+
+const slaveNode: Node = new Node(null);
 
 const slaveClient: Client = new Client('ws://events.openservices.co.za', async (command: Command, client: Client): Promise<void> => {
     const publishCommand: PublishCommand = command as PublishCommand;
 
     console.log(`Slave: '${publishCommand.data.type}'`);
 
+    if (publishCommand.data.type === 'compute') {
+        const computeCommand: ComputeCommand = new ComputeCommand(
+            new HashTaskRange(publishCommand.data.hashTaskRange.end, publishCommand.data.hashTaskRange.result, publishCommand.data.hashTaskRange.start),
+            publishCommand.data.masterId,
+        );
+
+        const answer: string = slaveNode.computeHashTaskRange(computeCommand.hashTaskRange);
+
+        const computeResultCommand: ComputeResultCommand = new ComputeResultCommand(computeCommand.hashTaskRange, answer);
+
+        client.send(new PublishCommand(`hash-computing-network-master-${computeCommand.masterId}`, computeResultCommand));
+    }
+
     if (publishCommand.data.type === 'ping') {
         const pingCommand: PingCommand = new PingCommand(publishCommand.data.masterId);
 
-        client.send(new PublishCommand(`hash-computing-network-master-${pingCommand.masterId}`, new JoinCommand(slaveId)));
+        const joinCommand: JoinCommand = new JoinCommand(slaveId);
+
+        client.send(new PublishCommand(`hash-computing-network-master-${pingCommand.masterId}`, joinCommand));
     }
 },
     [

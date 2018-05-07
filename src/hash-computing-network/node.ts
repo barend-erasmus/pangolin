@@ -1,4 +1,6 @@
 import * as BigNumber from 'big-number';
+import { IHashAlgorithm, MD5 } from 'majuro';
+import { BigNumberHelper } from './big-number-helper';
 import { HashRange } from './hash-range';
 import { HashTask } from './hash-task';
 import { HashTaskRange } from './hash-task-range';
@@ -12,6 +14,8 @@ export class Node {
     constructor(
         protected sendHashTaskRange: (hashTaskRange: HashTaskRange, workerProcess: string) => void,
     ) {
+        this.workerProcesses = [];
+
         this.hashTasks = [
             new HashTask('5D41402ABC4B2A76B9719D911017C592'),
         ];
@@ -27,8 +31,30 @@ export class Node {
         }
     }
 
+    public computeHashTaskRange(hashTaskRange: HashTaskRange): string {
+        const hashAlgorithm: IHashAlgorithm = new MD5();
+
+        let value: BigNumber = BigNumber(hashTaskRange.start);
+
+        const endValue: BigNumber = BigNumber(hashTaskRange.end);
+
+        while (value.lte(endValue)) {
+            const str: string = BigNumberHelper.toString(value, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split(''));
+
+            if (hashAlgorithm.calculate(str) === hashTaskRange.result) {
+                return str;
+            }
+
+            value = value.add(1);
+        }
+
+        return null;
+    }
+
     public addWorkerProcess(workerProcess: string): void {
-        this.workerProcesses.push(workerProcess);
+        if (this.workerProcesses.indexOf(workerProcess) === -1) {
+            this.workerProcesses.push(workerProcess);
+        }
     }
 
     public tick(): void {
