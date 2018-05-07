@@ -1,28 +1,35 @@
-import { MultiValueRegister } from './crdts/multi-value-register';
-import { VectorClock } from './vector-clock/vector-clock';
+import { ConsensusAlgorithm } from './consensus-algorithm/consensus-algorithm';
+import { DemoTransportProtocol } from './consensus-algorithm/demo-transport-protocol';
+import { ITransportProtocol } from './consensus-algorithm/interfaces/transport-protocol';
 
-const vectorClock1: VectorClock = new VectorClock('1');
-const multiValueRegister1: MultiValueRegister<string> = new MultiValueRegister<string>(vectorClock1);
+const nodes: string[] = [
+    'node-1',
+    'node-2',
+    'node-3',
+    'node-4',
+];
 
-const vectorClock2: VectorClock = new VectorClock('2');
-const multiValueRegister2: MultiValueRegister<string> = new MultiValueRegister<string>(vectorClock2);
+const transportProtocol: ITransportProtocol = new DemoTransportProtocol(nodes);
 
-multiValueRegister1.set(vectorClock1.increment(), 'Hello');
+const consensusAlgorithms: ConsensusAlgorithm[] = [
+    new ConsensusAlgorithm('node-1', nodes, transportProtocol),
+    new ConsensusAlgorithm('node-2', nodes, transportProtocol),
+    new ConsensusAlgorithm('node-3', nodes, transportProtocol),
+    new ConsensusAlgorithm('node-4', nodes, transportProtocol),
+];
 
-multiValueRegister1.merge(multiValueRegister2);
-multiValueRegister2.merge(multiValueRegister1);
+setInterval(() => {
+    consensusAlgorithms[0].tick();
+}, Math.random() * 3000);
 
-multiValueRegister2.set(vectorClock2.increment(), 'World');
+setInterval(() => {
+    consensusAlgorithms[1].tick();
+}, Math.random() * 3000);
 
-multiValueRegister1.merge(multiValueRegister2);
-multiValueRegister2.merge(multiValueRegister1);
+setInterval(() => {
+    consensusAlgorithms[2].tick();
+}, Math.random() * 3000);
 
-multiValueRegister1.set(vectorClock1.increment(), 'Foo');
-
-multiValueRegister2.set(vectorClock2.increment(), 'Bar');
-
-multiValueRegister1.merge(multiValueRegister2);
-multiValueRegister2.merge(multiValueRegister1);
-
-console.log(multiValueRegister1.get());
-console.log(multiValueRegister2.get());
+setInterval(() => {
+    consensusAlgorithms[3].tick();
+}, Math.random() * 3000);
