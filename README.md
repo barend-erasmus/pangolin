@@ -7,12 +7,14 @@ The Pangolin Project is a collection of algorithms mostly used in distributed sy
 ## Projects
 
 * [Brute Force Password Cracker](https://github.com/barend-erasmus/pangolin/tree/master/src/brute-force-password-cracker)
+* [Hash Computing Network](https://github.com/barend-erasmus/pangolin/tree/master/src/hash-computing-network)
 
 ## Implementations
 
 * [Alpha-Numeric Counter](https://github.com/barend-erasmus/pangolin/tree/master/src/alpha-numeric-counter)
 * [CRDT's (Conflict-Free Replicated Data Types)](https://github.com/barend-erasmus/pangolin/tree/master/src/crdts)
 * [Lamport Timestamp](https://github.com/barend-erasmus/pangolin/tree/master/src/lamport-timestamp)
+* [Message Queue](https://github.com/barend-erasmus/pangolin/tree/master/src/message-queue)
 * [Mutual Exclusion (Mutex)](https://github.com/barend-erasmus/pangolin/tree/master/src/mutex)
 * [Raft Consensus Algorithm](https://github.com/barend-erasmus/pangolin/tree/master/src/raft-consensus-algorithm)
 * [Remote Procedure Call (RPC)](https://github.com/barend-erasmus/pangolin/tree/master/src/rpc)
