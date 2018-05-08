@@ -10,13 +10,13 @@ import { Command } from './message-queue/commands/command';
 import { PublishCommand } from './message-queue/commands/publish';
 
 function sendHashTaskRange(hashTaskRange: HashTaskRange, workerProcess: string): void {
-    masterClient.send(new PublishCommand(`hash-computing-network-slave-${workerProcess}`, new ComputeCommand(hashTaskRange, `hash-computing-network-master-${masterId}`)));
+    masterClient.send(new PublishCommand(`hash-computing-network-slave-${workerProcess}`, new ComputeCommand(hashTaskRange, masterId)));
 }
 
 async function onMessage(command: Command, client: Client): Promise<void> {
     const publishCommand: PublishCommand = command as PublishCommand;
 
-    console.log(`Master: '${publishCommand.data.type}'`);
+    console.log(`Master (${masterId}): '${publishCommand.data.type}'`);
 
     if (publishCommand.data.type === 'compute-result') {
         const computeResultCommand: ComputeResultCommand = new ComputeResultCommand(
@@ -25,6 +25,10 @@ async function onMessage(command: Command, client: Client): Promise<void> {
         );
 
         masterNode.addCompletedHashTaskRange(computeResultCommand.hashTaskRange, computeResultCommand.answer);
+
+        if (computeResultCommand.answer) {
+            console.log(`Solved: ${computeResultCommand.hashTaskRange.result} -> ${computeResultCommand.answer}`);
+        }
     }
 
     if (publishCommand.data.type === 'join') {
@@ -57,13 +61,15 @@ const slaveNode: Node = new Node(null);
 const slaveClient: Client = new Client('ws://events.openservices.co.za', async (command: Command, client: Client): Promise<void> => {
     const publishCommand: PublishCommand = command as PublishCommand;
 
-    console.log(`Slave: '${publishCommand.data.type}'`);
+    console.log(`Slave (${slaveId}): '${publishCommand.data.type}'`);
 
     if (publishCommand.data.type === 'compute') {
         const computeCommand: ComputeCommand = new ComputeCommand(
             new HashTaskRange(publishCommand.data.hashTaskRange.end, publishCommand.data.hashTaskRange.result, publishCommand.data.hashTaskRange.start),
             publishCommand.data.masterId,
         );
+
+        console.log(`Computing: ${computeCommand.hashTaskRange.start} - ${computeCommand.hashTaskRange.end}`);
 
         const answer: string = slaveNode.computeHashTaskRange(computeCommand.hashTaskRange);
 

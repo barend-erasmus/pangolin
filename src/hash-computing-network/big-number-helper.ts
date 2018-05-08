@@ -5,6 +5,7 @@ export class BigNumberHelper {
     public static toString(value: BigNumber, baseCharacters: string[]): string {
         let result: string = '';
         const targetBase: number = baseCharacters.length;
+
         do {
             const index: number = parseInt(BigNumber(value.toString()).mod(targetBase).toString(), undefined);
 
