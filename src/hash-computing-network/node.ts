@@ -15,6 +15,7 @@ export class Node {
     protected hashTasks: HashTask[] = null;
 
     constructor(
+        protected onHashTaskSolved: (answer: string, result: string) => void,
         protected sendHashTaskRange: (hashTaskRange: HashTaskRange, workerProcessId: string) => void,
     ) {
         this.workerProcesses = [];
@@ -26,6 +27,11 @@ export class Node {
             new HashTask('E756F6AAFAFDEF4DEBDB5E49BCBD3F11'), // 'rat'
             new HashTask('81566E986CF8CC685A05AC5B634AF7F8'), // 'cow'
             new HashTask('ABAECF8CA3F98DC13EEECBAC263CD3ED'), // 'bird'
+            new HashTask('893B56E3CFE153FB770A120B83BAC20C'), // 'bear'
+            new HashTask('6B42D00C4CA6DDC33A604C54B8CE4ADC'), // 'lion'
+            new HashTask('BF4397D8B4DC061E1B6D191A352E9134'), // 'wolf'
+            new HashTask('F1BDF5ED1D7AD7EDE4E3809BD35644B0'), // 'horse'
+            new HashTask('1EBFD5913EF450B92B9E65B6DE09ACAD'), // 'whale'
         ];
     }
 
@@ -36,6 +42,10 @@ export class Node {
 
                 if (!hashTask.answer) {
                     hashTask.answer = answer;
+
+                    if (hashTask.answer && this.onHashTaskSolved) {
+                        this.onHashTaskSolved(hashTask.answer, hashTask.result);
+                    }
                 }
             }
         }
@@ -61,14 +71,19 @@ export class Node {
         return null;
     }
 
-    public addWorkerProcess(workerProcessId: string): void {
+    public addWorkerProcess(workerProcessId: string): boolean {
         const existingWorkerProcess: WorkerProcess = this.workerProcesses.find((workerProcess: WorkerProcess) => workerProcess.id === workerProcessId);
 
         if (existingWorkerProcess) {
             existingWorkerProcess.joinCommandTimestamp = new Date();
-        } else {
-            this.workerProcesses.push(new WorkerProcess(workerProcessId, new Date()));
+
+            return false;
         }
+
+        this.workerProcesses.push(new WorkerProcess(workerProcessId, new Date()));
+
+        return true;
+
     }
 
     public tick(): void {
@@ -77,7 +92,7 @@ export class Node {
         for (const workerProcess of this.workerProcesses) {
             const hashTaskRange: HashTaskRange = this.getNextHashTaskRange();
 
-            if (hashTaskRange) {
+            if (hashTaskRange && this.sendHashTaskRange) {
                 this.sendHashTaskRange(hashTaskRange, workerProcess.id);
             }
         }

@@ -11,9 +11,9 @@ import { Node } from './node';
 
 const slaveId: string = uuid.v4();
 
-const slaveNode: Node = new Node(null);
+const slaveNode: Node = new Node(null, null);
 
-const slaveClient: Client = new Client('ws://events.openservices.co.za', async (command: Command, client: Client): Promise<void> => {
+const slaveClient: Client = new Client('ws://pangolin.message-queue.openservices.co.za', async (command: Command, client: Client): Promise<void> => {
     const publishCommand: PublishCommand = command as PublishCommand;
 
     if (publishCommand.data.type === 'compute') {
@@ -21,8 +21,6 @@ const slaveClient: Client = new Client('ws://events.openservices.co.za', async (
             new HashTaskRange(publishCommand.data.hashTaskRange.end, publishCommand.data.hashTaskRange.result, publishCommand.data.hashTaskRange.start),
             publishCommand.data.masterId,
         );
-
-        console.log(`Computing: ${computeCommand.hashTaskRange.start} - ${computeCommand.hashTaskRange.end}`);
 
         const answer: string = slaveNode.computeHashTaskRange(computeCommand.hashTaskRange);
 

@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "gulp build & tsc",
-    "build-brute-force-password-cracker": "gulp build & tsc & browserify --standalone BFPC --ignore ws ./dist/brute-force-password-cracker/app.js -o ./dist/brute-force-password-cracker/bundle.js",
-    "build-hash-computing-network": "gulp build & tsc & browserify --ignore ws ./dist/hash-computing-network/master.js -o ./dist/hash-computing-network/master-bundle.js & browserify --ignore ws ./dist/hash-computing-network/slave.js -o ./dist/hash-computing-network/slave-bundle.js",
+    "build": "gulp build & tsc & browserify --standalone BFPC --ignore ws ./dist/brute-force-password-cracker/app.js -o ./dist/brute-force-password-cracker/bundle.js & tsc & browserify --ignore ws ./dist/hash-computing-network/master.js -o ./dist/hash-computing-network/master-bundle.js & browserify --ignore ws ./dist/hash-computing-network/slave.js -o ./dist/hash-computing-network/slave-bundle.js",
     "debug": "npm run build & node --inspect ./dist/app.js --dev",
     "lint": "tslint ./src/**/*.ts --fix --exclude ./src/**/*.d.ts",
     "start": "npm run build & node ./dist/app.js --dev",

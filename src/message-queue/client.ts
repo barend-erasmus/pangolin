@@ -2,7 +2,6 @@ import * as uuid from 'uuid';
 import * as WebSocket from 'ws';
 import { CommandBuilder } from './builders/command-builder';
 import { Command } from './commands/command';
-import { PublishCommand } from './commands/publish';
 import { SubscribeCommand } from './commands/subscribe';
 
 export class Client {
@@ -39,13 +38,10 @@ export class Client {
     }
 
     protected onClose(closeEvent: { code: number }): void {
-        console.log('Disconnected.');
-
         if (closeEvent.code === 1000) {
             return;
         }
 
-        console.log('Reconnecting.');
         this.connect();
     }
 
@@ -61,8 +57,6 @@ export class Client {
 
     protected onOpen(event: {}, callback: () => void): void {
         if (this.socket.readyState === 1) {
-            console.log('Connected.');
-
             for (const channel of this.subscribedChannels) {
                 const subscribeCommand: SubscribeCommand = new SubscribeCommand(channel);
                 this.socket.send(JSON.stringify(subscribeCommand));

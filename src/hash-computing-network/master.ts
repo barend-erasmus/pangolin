@@ -13,7 +13,11 @@ function sendHashTaskRange(hashTaskRange: HashTaskRange, workerProcess: string):
     masterClient.send(new PublishCommand(`hash-computing-network-slave-${workerProcess}`, new ComputeCommand(hashTaskRange, masterId)));
 }
 
-async function onMessage(command: Command, client: Client): Promise<void> {
+function onHashTaskSolved(answer: string, result: string): void {
+    console.log(`Solved '${result}': '${answer}'`);
+}
+
+function onMessage(command: Command, client: Client): void {
     const publishCommand: PublishCommand = command as PublishCommand;
 
     if (publishCommand.data.type === 'compute-result') {
@@ -23,24 +27,24 @@ async function onMessage(command: Command, client: Client): Promise<void> {
         );
 
         masterNode.addCompletedHashTaskRange(computeResultCommand.hashTaskRange, computeResultCommand.answer);
-
-        if (computeResultCommand.answer) {
-            console.log(`Solved: ${computeResultCommand.hashTaskRange.result} -> ${computeResultCommand.answer}`);
-        }
     }
 
     if (publishCommand.data.type === 'join') {
         const joinCommand: JoinCommand = new JoinCommand(publishCommand.data.slaveId);
 
-        masterNode.addWorkerProcess(joinCommand.slaveId);
+        const addWorkerProcessResult: boolean = masterNode.addWorkerProcess(joinCommand.slaveId);
+
+        if (addWorkerProcessResult) {
+            console.log(`'${joinCommand.slaveId}' joined`);
+        }
     }
 }
 
 const masterId: string = uuid.v4();
 
-const masterNode: Node = new Node(sendHashTaskRange);
+const masterNode: Node = new Node(onHashTaskSolved, sendHashTaskRange);
 
-const masterClient: Client = new Client('ws://events.openservices.co.za', onMessage,
+const masterClient: Client = new Client('ws://pangolin.message-queue.openservices.co.za', onMessage,
     [
         `hash-computing-network-master-${masterId}`,
     ]);

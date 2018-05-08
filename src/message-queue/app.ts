@@ -5,7 +5,7 @@ import { PublishCommand } from './commands/publish';
 import { SubscribeCommand } from './commands/subscribe';
 import { Client } from './models/client';
 
-const server: WebSocket.Server = new WebSocket.Server({ port: 8891 });
+const server: WebSocket.Server = new WebSocket.Server({ port: 8801 });
 
 const clients: Client[] = [];
 
@@ -47,4 +47,4 @@ server.on('connection', (socket: WebSocket) => {
 
 });
 
-console.log(`listening on port 8891`);
+console.log(`listening on port 8801`);
