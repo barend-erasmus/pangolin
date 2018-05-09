@@ -1,5 +1,3 @@
-import { ILogEntryHandler } from './interfaces/log-entry-handler';
-import { ITransportProtocol } from './interfaces/transport-protocol';
 import { AppendEntriesRequest } from './models/append-entries-request';
 import { AppendEntriesResponse } from './models/append-entries-response';
 import { LogEntry } from './models/log-entry';
@@ -14,8 +12,9 @@ export class RaftConsensusAlgorithm {
     protected state: State = null;
 
     constructor(
-        protected logEntryHandler: ILogEntryHandler,
-        protected transportProtocol: ITransportProtocol,
+        protected handleLogEntry: (logEntry: LogEntry) => Promise<void>,
+        protected sendAppendEntriesRequest: (appendEntriesRequest: AppendEntriesRequest, id: string) => Promise<AppendEntriesResponse>,
+        protected sendVoteRequest: (voteRequest: VoteRequest) => Promise<VoteResponse[]>,
     ) {
         this.resetElectionTimeout();
 
@@ -64,7 +63,7 @@ export class RaftConsensusAlgorithm {
             const index: number = appendEntriesRequest.previousLogIndex + i + 1;
 
             if (index >= this.state.log.length || this.state.log[index].term !== appendEntriesRequest.logEntries[index].term) {
-                // TODO: log = log[:index] ++ entries[i:]
+                this.state.log = this.state.log.slice(0, index).concat(appendEntriesRequest.logEntries.slice(i));
                 break;
             }
         }
@@ -78,7 +77,7 @@ export class RaftConsensusAlgorithm {
 
         if (this.state.commitIndex > this.state.lastApplied) {
             for (const i of this.range(this.state.lastApplied + 1, this.state.commitIndex)) {
-                this.logEntryHandler.handle(this.state.log[i]);
+                this.handleLogEntry(this.state.log[i]);
                 this.state.lastApplied = i;
             }
         }
@@ -107,7 +106,7 @@ export class RaftConsensusAlgorithm {
 
         const voteRequest: VoteRequest = new VoteRequest(id, this.state.log.length - 1, this.state.log.length === 0 ? -1 : this.state.log[this.state.log.length - 1].term, this.state.term);
 
-        const voteRequestResponses: VoteResponse[] = await this.transportProtocol.sendVoteRequest(voteRequest);
+        const voteRequestResponses: VoteResponse[] = await this.sendVoteRequest(voteRequest);
 
         for (const voteRequestResponse of voteRequestResponses) {
             if (voteRequestResponse.term > this.state.term) {
@@ -172,7 +171,7 @@ export class RaftConsensusAlgorithm {
             const sendTerm: number = this.state.term;
 
             const appendEntriesRequest: AppendEntriesRequest = new AppendEntriesRequest(this.state.commitIndex, id, logEntries, previousLogIndex, previousLogTerm, sendTerm);
-            const appendEntriesRequestResponse: AppendEntriesResponse = await this.transportProtocol.sendAppendEntriesRequest(appendEntriesRequest, peerId);
+            const appendEntriesRequestResponse: AppendEntriesResponse = await this.sendAppendEntriesRequest(appendEntriesRequest, peerId);
 
             if (appendEntriesRequestResponse.term > this.state.term) {
                 this.state.defaultMatchIndex = -1;
@@ -282,10 +281,6 @@ export class RaftConsensusAlgorithm {
         this.resetElectionTimeout();
 
         return new VoteResponse(true, this.state.term);
-    }
-
-    public setTransportProtocol(transportProtocol: ITransportProtocol): void {
-        this.transportProtocol = transportProtocol;
     }
 
     public async tick(id: string, peerIds: string[]): Promise<void> {

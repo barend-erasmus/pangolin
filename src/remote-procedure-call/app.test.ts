@@ -15,24 +15,20 @@ describe('TCPRPC', () => {
     });
 
     beforeEach(async () => {
-        rpcClient = new TCPRPCClient('127.0.0.1', {
-            handle: async (message: Message) => {
+        rpcClient = new TCPRPCClient(async (message: Message) => {
+            if (message.payload === 'PING') {
+                return 'PONG';
+            }
+
+            return 'ERROR';
+        }, '127.0.0.1', 5001);
+
+        rpcServer = new TCPRPCServer(async (message: Message) => {
                 if (message.payload === 'PING') {
                     return 'PONG';
                 }
 
                 return 'ERROR';
-            },
-        }, 5001);
-
-        rpcServer = new TCPRPCServer({
-            handle: async (message: Message) => {
-                if (message.payload === 'PING') {
-                    return 'PONG';
-                }
-
-                return 'ERROR';
-            },
         }, 5001);
 
         rpcServer.listen();

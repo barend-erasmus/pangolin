@@ -1,5 +1,4 @@
 import * as net from 'net';
-import { IMessageHandler } from './interfaces/message-handler';
 import { Message } from './models/message';
 import { RPC } from './rpc';
 import { TCPRPC } from './tcp-rpc';
@@ -11,8 +10,8 @@ export class TCPRPCClient {
     protected socket: net.Socket = null;
 
     constructor(
+        protected handleMessage: (message: Message) => Promise<any>,
         protected host: string,
-        protected messageHandler: IMessageHandler,
         protected port: number,
     ) {
         this.socket = new net.Socket();
@@ -30,7 +29,7 @@ export class TCPRPCClient {
                     return;
                 }
 
-                this.rpc = new TCPRPC(this.messageHandler, this.socket);
+                this.rpc = new TCPRPC(this.handleMessage, this.socket);
 
                 resolve();
             });

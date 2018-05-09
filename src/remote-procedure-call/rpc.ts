@@ -1,5 +1,4 @@
 import * as uuid from 'uuid';
-import { IMessageHandler } from './interfaces/message-handler';
 import { Message } from './models/message';
 
 export abstract class RPC {
@@ -9,7 +8,7 @@ export abstract class RPC {
     protected requestTimeout: number = 2000;
 
     constructor(
-        protected messageHandler: IMessageHandler,
+        protected handleMessageFn: (message: Message) => Promise<any>,
     ) {
         this.correlationActions = {};
     }
@@ -42,7 +41,7 @@ export abstract class RPC {
 
             delete this.correlationActions[message.correlationId];
         } else {
-            this.messageHandler.handle(message).then((response: any) => {
+            this.handleMessageFn(message).then((response: any) => {
                 this.sendMessage(new Message(message.command, message.correlationId, response));
             });
         }

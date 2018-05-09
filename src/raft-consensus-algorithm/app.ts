@@ -1,56 +1,55 @@
-import { InMemoryTransportProtocol } from './in-memory-transport-protocol';
-import { ITransportProtocol } from './interfaces/transport-protocol';
 import { LogEntry } from './models/log-entry';
 import { RaftConsensusAlgorithm } from './raft-consensus-algorithm';
+import { AppendEntriesRequest } from './models/append-entries-request';
+import { VoteRequest } from './models/vote-request';
 
-// import { InMemoryTransportProtocol } from './raft-consensus-algorithm/in-memory-transport-protocol';
-// import { ITransportProtocol } from './raft-consensus-algorithm/interfaces/transport-protocol';
-// import { LogEntry } from './raft-consensus-algorithm/models/log-entry';
-// import { RaftConsensusAlgorithm } from './raft-consensus-algorithm/raft-consensus-algorithm';
+const raftConsensusAlgorithm1 = new RaftConsensusAlgorithm(async (logEntry: LogEntry) => {
+    
+}, async (appendEntriesRequest: AppendEntriesRequest, id: string) => {
+    return (raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).appendEntries(JSON.parse(JSON.stringify(appendEntriesRequest)));
+}, async (voteRequest: VoteRequest) => {
+    return Object.keys(this.raftConsensusAlgorithms).map((id: string) => (this.raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).requestVote(JSON.parse(JSON.stringify(voteRequest))));
+});
 
-const raftConsensusAlgorithm1 = new RaftConsensusAlgorithm({
-    handle: async (logEntry: LogEntry): Promise<void> => {
+const raftConsensusAlgorithm2 = new RaftConsensusAlgorithm(async (logEntry: LogEntry) => {
+    
+}, async (appendEntriesRequest: AppendEntriesRequest, id: string) => {
+    return (raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).appendEntries(JSON.parse(JSON.stringify(appendEntriesRequest)));
+}, async (voteRequest: VoteRequest) => {
+    return Object.keys(this.raftConsensusAlgorithms).map((id: string) => (this.raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).requestVote(JSON.parse(JSON.stringify(voteRequest))));
+});
 
-    },
-}, null);
+const raftConsensusAlgorithm3 = new RaftConsensusAlgorithm(async (logEntry: LogEntry) => {
+    
+}, async (appendEntriesRequest: AppendEntriesRequest, id: string) => {
+    return (raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).appendEntries(JSON.parse(JSON.stringify(appendEntriesRequest)));
+}, async (voteRequest: VoteRequest) => {
+    return Object.keys(this.raftConsensusAlgorithms).map((id: string) => (this.raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).requestVote(JSON.parse(JSON.stringify(voteRequest))));
+});
 
-const raftConsensusAlgorithm2 = new RaftConsensusAlgorithm({
-    handle: async (logEntry: LogEntry): Promise<void> => {
+const raftConsensusAlgorithm4 = new RaftConsensusAlgorithm(async (logEntry: LogEntry) => {
+    
+}, async (appendEntriesRequest: AppendEntriesRequest, id: string) => {
+    return (raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).appendEntries(JSON.parse(JSON.stringify(appendEntriesRequest)));
+}, async (voteRequest: VoteRequest) => {
+    return Object.keys(this.raftConsensusAlgorithms).map((id: string) => (this.raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).requestVote(JSON.parse(JSON.stringify(voteRequest))));
+});
 
-    },
-}, null);
+const raftConsensusAlgorithm5 = new RaftConsensusAlgorithm(async (logEntry: LogEntry) => {
+    
+}, async (appendEntriesRequest: AppendEntriesRequest, id: string) => {
+    return (raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).appendEntries(JSON.parse(JSON.stringify(appendEntriesRequest)));
+}, async (voteRequest: VoteRequest) => {
+    return Object.keys(this.raftConsensusAlgorithms).map((id: string) => (this.raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).requestVote(JSON.parse(JSON.stringify(voteRequest))));
+});
 
-const raftConsensusAlgorithm3 = new RaftConsensusAlgorithm({
-    handle: async (logEntry: LogEntry): Promise<void> => {
-
-    },
-}, null);
-
-const raftConsensusAlgorithm4 = new RaftConsensusAlgorithm({
-    handle: async (logEntry: LogEntry): Promise<void> => {
-
-    },
-}, null);
-
-const raftConsensusAlgorithm5 = new RaftConsensusAlgorithm({
-    handle: async (logEntry: LogEntry): Promise<void> => {
-
-    },
-}, null);
-
-const transportProtocol: ITransportProtocol = new InMemoryTransportProtocol({
+const raftConsensusAlgorithms: {} = {
     a: raftConsensusAlgorithm1,
     b: raftConsensusAlgorithm2,
     c: raftConsensusAlgorithm3,
     d: raftConsensusAlgorithm4,
     e: raftConsensusAlgorithm5,
-});
-
-raftConsensusAlgorithm1.setTransportProtocol(transportProtocol);
-raftConsensusAlgorithm2.setTransportProtocol(transportProtocol);
-raftConsensusAlgorithm3.setTransportProtocol(transportProtocol);
-raftConsensusAlgorithm4.setTransportProtocol(transportProtocol);
-raftConsensusAlgorithm5.setTransportProtocol(transportProtocol);
+};
 
 let leader: string = null;
 

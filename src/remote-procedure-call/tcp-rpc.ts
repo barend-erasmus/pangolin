@@ -1,16 +1,15 @@
 import * as net from 'net';
 import * as uuid from 'uuid';
-import { IMessageHandler } from './interfaces/message-handler';
 import { Message } from './models/message';
 import { RPC } from './rpc';
 
 export class TCPRPC extends RPC {
 
     constructor(
-        messageHandler: IMessageHandler,
+        handleMessage: (message: Message) => Promise<any>,
         protected socket: net.Socket,
     ) {
-        super(messageHandler);
+        super(handleMessage);
 
         this.addListenersToSocket();
     }
