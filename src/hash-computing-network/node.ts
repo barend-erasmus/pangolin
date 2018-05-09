@@ -32,6 +32,7 @@ export class Node {
             new HashTask('BF4397D8B4DC061E1B6D191A352E9134'), // 'wolf'
             new HashTask('F1BDF5ED1D7AD7EDE4E3809BD35644B0'), // 'horse'
             new HashTask('1EBFD5913EF450B92B9E65B6DE09ACAD'), // 'whale'
+            new HashTask('9C281A0EF81E257407FE01FA6AA0FA73'), // 'hello'
         ];
     }
 
