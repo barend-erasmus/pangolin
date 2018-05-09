@@ -8,13 +8,12 @@ export class HashTask {
 
     protected completedHashRanges: HashRange[] = null;
 
-    protected hashRangeExpiry: number = 3000;
-
-    protected hashRangeSize: number = 10000;
-
     protected queuedHashRanges: QueuedHashRange[] = null;
 
-    constructor(public result: string) {
+    constructor(
+        protected hashRangeExpiry: number,
+        protected hashRangeSize: number,
+        public result: string) {
         this.completedHashRanges = [];
 
         this.queuedHashRanges = [];

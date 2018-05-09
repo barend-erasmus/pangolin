@@ -2,15 +2,16 @@ import * as uuid from 'uuid';
 import * as WebSocket from 'ws';
 import { CommandBuilder } from './builders/command-builder';
 import { Command } from './commands/command';
+import { PublishCommand } from './commands/publish';
 import { SubscribeCommand } from './commands/subscribe';
 
-export class Client {
+export class MessageQueueClient {
 
     protected socket: WebSocket = null;
 
     constructor(
         protected host: string,
-        protected onMessageFn: (command: Command, client: Client) => void,
+        protected onMessageFn: (channel: string, data: any, messageQueueClient: MessageQueueClient) => void,
         protected subscribedChannels: string[],
     ) {
     }
@@ -33,8 +34,8 @@ export class Client {
         });
     }
 
-    public send(command: Command): void {
-        this.socket.send(JSON.stringify(command));
+    public send(channel: string, data: any): void {
+        this.socket.send(JSON.stringify(new PublishCommand(channel, data)));
     }
 
     protected onClose(closeEvent: { code: number }): void {
@@ -50,8 +51,12 @@ export class Client {
 
         const command: Command = commandBuilder.build(JSON.parse(event.data));
 
-        if (this.onMessageFn) {
-            this.onMessageFn(command, this);
+        if (command instanceof PublishCommand) {
+            const publishCommand: PublishCommand = command as PublishCommand;
+
+            if (this.onMessageFn) {
+                this.onMessageFn(publishCommand.channel, publishCommand.data, this);
+            }
         }
     }
 

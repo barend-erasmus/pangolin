@@ -1,57 +1,67 @@
 import * as uuid from 'uuid';
-import { Client } from '../message-queue/client';
-import { Command } from '../message-queue/commands/command';
-import { PublishCommand } from '../message-queue/commands/publish';
+import { MessageQueueClient } from '../message-queue/message-queue-client';
 import { ComputeCommand } from './commands/compute';
 import { ComputeResultCommand } from './commands/compute-result';
 import { JoinCommand } from './commands/join';
 import { PingCommand } from './commands/ping';
 import { HashTaskRange } from './hash-task-range';
-import { Node } from './node';
+import { MasterNode } from './master-node';
 
-function sendHashTaskRange(hashTaskRange: HashTaskRange, workerProcess: string): void {
-    masterClient.send(new PublishCommand(`hash-computing-network-slave-${workerProcess}`, new ComputeCommand(hashTaskRange, masterId)));
-}
+export class Master {
 
-function onHashTaskSolved(answer: string, result: string): void {
-    console.log(`Solved '${result}': '${answer}'`);
-}
+    protected id: string = null;
 
-function onMessage(command: Command, client: Client): void {
-    const publishCommand: PublishCommand = command as PublishCommand;
+    protected masterNode: MasterNode = null;
 
-    if (publishCommand.data.type === 'compute-result') {
-        const computeResultCommand: ComputeResultCommand = new ComputeResultCommand(
-            new HashTaskRange(publishCommand.data.hashTaskRange.end, publishCommand.data.hashTaskRange.result, publishCommand.data.hashTaskRange.start),
-            publishCommand.data.answer,
-        );
+    protected messageQueueClient: MessageQueueClient = null;
 
-        masterNode.addCompletedHashTaskRange(computeResultCommand.hashTaskRange, computeResultCommand.answer);
+    constructor() {
+        this.id = uuid.v4();
+
+        this.masterNode = new MasterNode(5000, 10000, this.onHashTaskSolved, this.sendHashRangeTask, 20000);
+
+        this.messageQueueClient = new MessageQueueClient('ws://pangolin.message-queue.openservices.co.za', this.onMessage,
+            [
+                `hash-computing-network-master-${this.id}`,
+            ]);
     }
 
-    if (publishCommand.data.type === 'join') {
-        const joinCommand: JoinCommand = new JoinCommand(publishCommand.data.slaveId);
+    public async start(): Promise<void> {
+        await this.messageQueueClient.connect();
 
-        const addWorkerProcessResult: boolean = masterNode.addWorkerProcess(joinCommand.slaveId);
+        setInterval(() => {
+            this.messageQueueClient.send('hash-computing-network', new PingCommand(this.id));
+            this.masterNode.tick();
+        }, 7000);
+    }
 
-        if (addWorkerProcessResult) {
-            console.log(`'${joinCommand.slaveId}' joined`);
+    protected sendHashRangeTask(hashTaskRange: HashTaskRange, workerProcess: string): void {
+        this.messageQueueClient.send(`hash-computing-network-slave-${workerProcess}`, new ComputeCommand(hashTaskRange, this.id));
+    }
+
+    protected onHashTaskSolved(answer: string, result: string): void {
+        console.log(`Solved '${result}': '${answer}'`);
+    }
+
+    protected onMessage(channel: string, data: any, messageQueueClient: MessageQueueClient): void {
+        if (data.type === 'compute-result') {
+            const computeResultCommand: ComputeResultCommand = new ComputeResultCommand(
+                new HashTaskRange(data.hashTaskRange.end, data.hashTaskRange.result, data.hashTaskRange.start),
+                data.answer,
+            );
+
+            this.masterNode.addCompletedHashTaskRange(computeResultCommand.hashTaskRange, computeResultCommand.answer);
+        }
+
+        if (data.type === 'join') {
+            const joinCommand: JoinCommand = new JoinCommand(data.slaveId);
+
+            const addWorkerProcessResult: boolean = this.masterNode.addWorkerProcess(joinCommand.slaveId);
         }
     }
+
 }
 
-const masterId: string = uuid.v4();
+const master: Master = new Master();
 
-const masterNode: Node = new Node(onHashTaskSolved, sendHashTaskRange);
-
-const masterClient: Client = new Client('ws://pangolin.message-queue.openservices.co.za', onMessage,
-    [
-        `hash-computing-network-master-${masterId}`,
-    ]);
-
-masterClient.connect();
-
-setInterval(() => {
-    masterClient.send(new PublishCommand('hash-computing-network', new PingCommand(masterId)));
-    masterNode.tick();
-}, 7000);
+master.start();

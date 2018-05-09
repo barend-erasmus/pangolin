@@ -1,10 +1,10 @@
-import { LogEntry } from './models/log-entry';
-import { RaftConsensusAlgorithm } from './raft-consensus-algorithm';
 import { AppendEntriesRequest } from './models/append-entries-request';
+import { LogEntry } from './models/log-entry';
 import { VoteRequest } from './models/vote-request';
+import { RaftConsensusAlgorithm } from './raft-consensus-algorithm';
 
 const raftConsensusAlgorithm1 = new RaftConsensusAlgorithm(async (logEntry: LogEntry) => {
-    
+
 }, async (appendEntriesRequest: AppendEntriesRequest, id: string) => {
     return (raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).appendEntries(JSON.parse(JSON.stringify(appendEntriesRequest)));
 }, async (voteRequest: VoteRequest) => {
@@ -12,7 +12,7 @@ const raftConsensusAlgorithm1 = new RaftConsensusAlgorithm(async (logEntry: LogE
 });
 
 const raftConsensusAlgorithm2 = new RaftConsensusAlgorithm(async (logEntry: LogEntry) => {
-    
+
 }, async (appendEntriesRequest: AppendEntriesRequest, id: string) => {
     return (raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).appendEntries(JSON.parse(JSON.stringify(appendEntriesRequest)));
 }, async (voteRequest: VoteRequest) => {
@@ -20,7 +20,7 @@ const raftConsensusAlgorithm2 = new RaftConsensusAlgorithm(async (logEntry: LogE
 });
 
 const raftConsensusAlgorithm3 = new RaftConsensusAlgorithm(async (logEntry: LogEntry) => {
-    
+
 }, async (appendEntriesRequest: AppendEntriesRequest, id: string) => {
     return (raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).appendEntries(JSON.parse(JSON.stringify(appendEntriesRequest)));
 }, async (voteRequest: VoteRequest) => {
@@ -28,7 +28,7 @@ const raftConsensusAlgorithm3 = new RaftConsensusAlgorithm(async (logEntry: LogE
 });
 
 const raftConsensusAlgorithm4 = new RaftConsensusAlgorithm(async (logEntry: LogEntry) => {
-    
+
 }, async (appendEntriesRequest: AppendEntriesRequest, id: string) => {
     return (raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).appendEntries(JSON.parse(JSON.stringify(appendEntriesRequest)));
 }, async (voteRequest: VoteRequest) => {
@@ -36,7 +36,7 @@ const raftConsensusAlgorithm4 = new RaftConsensusAlgorithm(async (logEntry: LogE
 });
 
 const raftConsensusAlgorithm5 = new RaftConsensusAlgorithm(async (logEntry: LogEntry) => {
-    
+
 }, async (appendEntriesRequest: AppendEntriesRequest, id: string) => {
     return (raftConsensusAlgorithms[id] as RaftConsensusAlgorithm).appendEntries(JSON.parse(JSON.stringify(appendEntriesRequest)));
 }, async (voteRequest: VoteRequest) => {

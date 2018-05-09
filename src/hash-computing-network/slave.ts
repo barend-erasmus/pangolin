@@ -1,45 +1,60 @@
 import * as uuid from 'uuid';
-import { Client } from '../message-queue/client';
-import { Command } from '../message-queue/commands/command';
-import { PublishCommand } from '../message-queue/commands/publish';
+import { MessageQueueClient } from '../message-queue/message-queue-client';
 import { ComputeCommand } from './commands/compute';
 import { ComputeResultCommand } from './commands/compute-result';
 import { JoinCommand } from './commands/join';
 import { PingCommand } from './commands/ping';
 import { HashTaskRange } from './hash-task-range';
-import { Node } from './node';
+import { SlaveNode } from './slave-node';
 
-const slaveId: string = uuid.v4();
+export class Slave {
 
-const slaveNode: Node = new Node(null, null);
+    protected id: string = null;
 
-const slaveClient: Client = new Client('ws://pangolin.message-queue.openservices.co.za', async (command: Command, client: Client): Promise<void> => {
-    const publishCommand: PublishCommand = command as PublishCommand;
+    protected slaveNode: SlaveNode = null;
 
-    if (publishCommand.data.type === 'compute') {
-        const computeCommand: ComputeCommand = new ComputeCommand(
-            new HashTaskRange(publishCommand.data.hashTaskRange.end, publishCommand.data.hashTaskRange.result, publishCommand.data.hashTaskRange.start),
-            publishCommand.data.masterId,
-        );
+    protected messageQueueClient: MessageQueueClient = null;
 
-        const answer: string = slaveNode.computeHashTaskRange(computeCommand.hashTaskRange);
+    constructor() {
+        this.id = uuid.v4();
 
-        const computeResultCommand: ComputeResultCommand = new ComputeResultCommand(computeCommand.hashTaskRange, answer);
+        this.slaveNode = new SlaveNode();
 
-        client.send(new PublishCommand(`hash-computing-network-master-${computeCommand.masterId}`, computeResultCommand));
+        this.messageQueueClient = new MessageQueueClient('ws://pangolin.message-queue.openservices.co.za', this.onMessage,
+            [
+                `hash-computing-network`,
+                `hash-computing-network-slave-${this.id}`,
+            ]);
     }
 
-    if (publishCommand.data.type === 'ping') {
-        const pingCommand: PingCommand = new PingCommand(publishCommand.data.masterId);
-
-        const joinCommand: JoinCommand = new JoinCommand(slaveId);
-
-        client.send(new PublishCommand(`hash-computing-network-master-${pingCommand.masterId}`, joinCommand));
+    public async start(): Promise<void> {
+        await this.messageQueueClient.connect();
     }
-},
-    [
-        `hash-computing-network`,
-        `hash-computing-network-slave-${slaveId}`,
-    ]);
 
-slaveClient.connect();
+    protected onMessage(channel: string, data: any, messageQueueClient: MessageQueueClient): void {
+        if (data.type === 'compute') {
+            const computeCommand: ComputeCommand = new ComputeCommand(
+                new HashTaskRange(data.hashTaskRange.end, data.hashTaskRange.result, data.hashTaskRange.start),
+                data.masterId,
+            );
+
+            const answer: string = this.slaveNode.computeHashTaskRange(computeCommand.hashTaskRange);
+
+            const computeResultCommand: ComputeResultCommand = new ComputeResultCommand(computeCommand.hashTaskRange, answer);
+
+            this.messageQueueClient.send(`hash-computing-network-master-${computeCommand.masterId}`, computeResultCommand);
+        }
+
+        if (data.type === 'ping') {
+            const pingCommand: PingCommand = new PingCommand(data.masterId);
+
+            const joinCommand: JoinCommand = new JoinCommand(this.id);
+
+            this.messageQueueClient.send(`hash-computing-network-master-${pingCommand.masterId}`, joinCommand);
+        }
+    }
+}
+
+const slave: Slave = new Slave();
+
+slave.start();
