@@ -1,24 +1,22 @@
-import { Client } from './client';
-import { Command } from './commands/command';
-import { PublishCommand } from './commands/publish';
+import { MessageQueueClient } from './message-queue-client';
 
 (async () => {
-    const client1: Client = new Client('ws://events.openservices.co.za', async (command: Command, client: Client) => {
-        console.log((command as PublishCommand).data);
+    const messageQueueClient1: MessageQueueClient = new MessageQueueClient('ws://events.openservices.co.za', async (channel: string, data: any, messageQueueClient: MessageQueueClient) => {
+        console.log(data);
     },
         [
             'channel-1',
         ]);
 
-    const client2: Client = new Client('ws://events.openservices.co.za', async (command: Command, client: Client) => {
-        client.send(new PublishCommand('channel-1', 'PONG from Client 2'));
+    const messageQueueClient2: MessageQueueClient = new MessageQueueClient('ws://events.openservices.co.za', async (channel: string, data: any, messageQueueClient: MessageQueueClient) => {
+        messageQueueClient.send('channel-1', 'PONG from Client 2');
     },
         [
             'channel-2',
         ]);
 
-    await client1.connect();
-    await client2.connect();
+    await messageQueueClient1.connect();
+    await messageQueueClient2.connect();
 
-    client1.send(new PublishCommand('channel-2', 'PING'));
+    messageQueueClient1.send('channel-2', 'PING from Client 1');
 })();
