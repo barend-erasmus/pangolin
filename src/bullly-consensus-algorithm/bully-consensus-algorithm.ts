@@ -22,18 +22,24 @@ export class BullyConsensusAlgorithm {
         this.timeout = 3000;
     }
 
+    public isLeader(): boolean {
+        return this.id === this.leader;
+    }
+
     public onCoordinatorRequest(coordinatorRequest: CoordinatorRequest, id: string): void {
         this.lastCoordinatorRequestTimestamp = new Date();
         this.lastElectionRequestTimestamp = null;
         this.leader = id;
 
-        console.log(this.leader);
+        // console.log(this.leader);
     }
 
     public onElectionRequest(electionRequest: ElectionRequest, id: string): void {
         if (id < this.id) {
+            console.log(`${this.id}: Sending Coordinator Request to '${id}'`);
             this.sendCoordinatorRequests();
         } else {
+            console.log(`${this.id}: Sending OK Request to '${id}'`);
             this.sendOKRequest(id, new OKRequest());
         }
     }
@@ -56,13 +62,10 @@ export class BullyConsensusAlgorithm {
         }
     }
 
-    protected isLeader(): boolean {
-        return this.id === this.leader;
-    }
-
     protected sendCoordinatorRequests(): void {
         for (const id of this.peerIds) {
             if (id < this.id) {
+                console.log(`${this.id}: Sending Coordinator Request to '${id}'`);
                 this.sendCoordinatorRequest(new CoordinatorRequest(), id);
             }
         }
@@ -73,6 +76,7 @@ export class BullyConsensusAlgorithm {
 
         for (const id of this.peerIds) {
             if (id > this.id) {
+                console.log(`${this.id}: Sending Election Request to '${id}'`);
                 this.sendElectionRequest(new ElectionRequest(), id);
             }
         }
